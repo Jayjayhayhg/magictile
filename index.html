@@ -534,20 +534,22 @@
 
   // Returns tile in hit zone for a column, or null
   function getTileInHitZone(col) {
-    // Find the tile whose bottom is within hit zone range
     for (const tile of tiles) {
       if (tile.col !== col || tile.missed || tile.scored) continue;
       const bottom = tile.y + tile.h;
       const top = tile.y;
-      if (tile.isLong) {
-        // Long tile: hittable when bottom enters hit zone
-        if (bottom >= HIT_ZONE_Y - 30 && top < CANVAS_H) return tile;
-      } else {
-        // Short tile: hittable when bottom is in hit zone range
-        if (bottom >= HIT_ZONE_Y - 20 && bottom <= CANVAS_H + 10) return tile;
-      }
+      // Hittable when tile overlaps the hit zone
+      if (bottom >= HIT_ZONE_Y && top <= CANVAS_H) return tile;
     }
     return null;
+  }
+
+  // Returns true if any tile exists in this column (even above hit zone)
+  function hasTileInCol(col) {
+    for (const tile of tiles) {
+      if (tile.col === col && !tile.missed && !tile.scored) return true;
+    }
+    return false;
   }
 
   // ─── Input: Press ─────────────────────────────────────────────────────────
@@ -558,7 +560,9 @@
 
     const tile = getTileInHitZone(col);
     if (!tile) {
-      // Clicked empty space
+      // If a tile exists in this column but hasn't reached hit zone yet, ignore (too early)
+      if (hasTileInCol(col)) return;
+      // Truly empty column — game over
       triggerGameOver();
       return;
     }
