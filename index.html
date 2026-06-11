@@ -2,19 +2,23 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Magic Tiles</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  * { margin: 0; padding: 0; box-sizing: border-box; touch-action: manipulation; }
   body {
     background: #1a1a2e;
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
-    min-height: 100vh;
+    min-height: 100vh; min-height: 100dvh;
     font-family: 'Segoe UI', Arial, sans-serif;
     color: #fff;
     user-select: none;
     -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
   }
   #app {
     display: flex; flex-direction: column; align-items: center;
@@ -62,7 +66,7 @@
     background: rgba(255,255,255,0.12); border-radius: 3px; overflow: hidden;
   }
   #progressFill { height: 100%; width: 0%; border-radius: 3px; transition: width 0.12s linear; }
-  #gameCanvas { display: block; border-radius: 8px; box-shadow: 0 0 40px rgba(0,0,0,0.55); touch-action: none; }
+  #gameCanvas { display: block; border-radius: 8px; box-shadow: 0 0 40px rgba(0,0,0,0.55); touch-action: none; -webkit-touch-callout: none; }
 
   /* RESULT */
   #resultScreen {
@@ -1000,7 +1004,7 @@ function buildSelect() {
       <div class="meta">${song.difficulty} &nbsp;·&nbsp; BPM ${song.bpm} &nbsp;·&nbsp; ${song.pattern.length}노트</div>
       <div class="diff-dots">${dotHtml}</div>
     `;
-    card.addEventListener('click', () => startGame(idx));
+    card.addEventListener('click', () => { ensureAudio(); startGame(idx); });
     container.appendChild(card);
   });
 }
@@ -1012,6 +1016,25 @@ document.getElementById('btnSongSelect').addEventListener('click', () => {
   lastTS = null;
   showScreen('select');
 });
+
+// ── Mobile canvas scaling ──────────────────────────────────────────────────
+(function scaleCanvas() {
+  const maxW = Math.min(window.innerWidth, 360);
+  if (maxW < 360) {
+    const scale = maxW / 360;
+    const c = document.getElementById('gameCanvas');
+    c.style.width = maxW + 'px';
+    c.style.height = (520 * scale) + 'px';
+    ['#hud','#progressBar'].forEach(id => {
+      const el = document.querySelector(id);
+      if (el) el.style.width = maxW + 'px';
+    });
+    document.querySelectorAll('.song-card').forEach(el => el.style.width = (maxW - 20) + 'px');
+  }
+})();
+
+// Prevent scroll/zoom on touch outside canvas
+document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
 
 // ── Init ───────────────────────────────────────────────────────────────────
 buildSelect();
