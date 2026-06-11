@@ -128,7 +128,7 @@
 const W = 360, H = 520;
 const COL_W = W / 4;   // 90px per column
 const SCROLL_SPD = 4.5;
-const HIT_Y = H - 56;  // 464
+const HIT_Y = H - 150;  // 370 — judgment line higher up
 const PREROLL = H / SCROLL_SPD / 60;  // seconds to pre-spawn
 const TILE_H = 64;
 const TILE_GAP = 4;
@@ -662,11 +662,15 @@ function loop(ts) {
   const song = SONGS[currentSong];
   songTime += dt;
 
-  // Spawn
+  // Spawn — enforce minimum gap so no two tiles appear at the same time
+  const MIN_GAP = 0.28; // seconds between spawns
   while (spawnIdx < song.pattern.length) {
     const n = song.pattern[spawnIdx];
-    if (n.t - PREROLL <= songTime) { spawnTile(n); spawnIdx++; }
-    else break;
+    if (n.t - PREROLL > songTime) break;
+    // Skip if previous tile was too recent
+    const prev = song.pattern[spawnIdx - 1];
+    if (prev && n.t - prev.t < MIN_GAP) { spawnIdx++; continue; }
+    spawnTile(n); spawnIdx++;
   }
   if (spawnIdx >= song.pattern.length) allSpawned = true;
 
