@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Magic Tiles</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      background: #0a0a0f;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    #app {
+      position: relative;
+      width: 360px;
+      height: 640px;
+      overflow: hidden;
+      border-radius: 16px;
+      box-shadow: 0 0 60px rgba(100, 180, 255, 0.15), 0 0 120px rgba(100, 180, 255, 0.05);
+    }
+
+    /* ===== CANVAS ===== */
+    #gameCanvas {
+      display: block;
+      background: #0d0d14;
+    }
+
+    /* ===== OVERLAY SCREENS ===== */
+    .screen {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      transition: opacity 0.4s ease;
+    }
+
+    .screen.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* start screen */
+    #startScreen {
+      background: linear-gradient(180deg, #0d0d14 0%, #111120 100%);
+    }
+
+    .logo {
+      text-align: center;
+    }
+
+    .logo-title {
+      font-size: 42px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      background: linear-gradient(135deg, #64b4ff, #a78bfa, #f472b6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+    }
+
+    .logo-subtitle {
+      font-size: 13px;
+      letter-spacing: 6px;
+      color: #4a5568;
+      text-transform: uppercase;
+      margin-top: 6px;
+    }
+
+    .piano-keys {
+      display: flex;
+      gap: 4px;
+      margin-top: 16px;
+    }
+
+    .piano-key {
+      width: 28px;
+      height: 72px;
+      border-radius: 0 0 6px 6px;
+      animation: keyBounce 1.2s ease-in-out infinite;
+    }
+
+    .piano-key:nth-child(1) { background: #64b4ff; animation-delay: 0s; }
+    .piano-key:nth-child(2) { background: #a78bfa; animation-delay: 0.15s; }
+    .piano-key:nth-child(3) { background: #f472b6; animation-delay: 0.3s; }
+    .piano-key:nth-child(4) { background: #34d399; animation-delay: 0.45s; }
+
+    @keyframes keyBounce {
+      0%, 100% { transform: scaleY(1); opacity: 0.7; }
+      50% { transform: scaleY(1.18); opacity: 1; }
+    }
+
+    .btn {
+      padding: 14px 48px;
+      border: none;
+      border-radius: 50px;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      outline: none;
+    }
+
+    .btn:active { transform: scale(0.95); }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #64b4ff, #a78bfa);
+      color: #fff;
+      box-shadow: 0 4px 24px rgba(100, 180, 255, 0.4);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 6px 32px rgba(100, 180, 255, 0.6);
+      transform: translateY(-2px);
+    }
+
+    .hint {
+      font-size: 12px;
+      color: #3d4966;
+      letter-spacing: 1px;
+      text-align: center;
+    }
+
+    /* HUD */
+    #hud {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      background: linear-gradient(180deg, rgba(13,13,20,0.95) 0%, rgba(13,13,20,0) 100%);
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    #hud.hidden { display: none; }
+
+    .hud-score {
+      font-size: 28px;
+      font-weight: 900;
+      color: #fff;
+      text-shadow: 0 0 20px rgba(100,180,255,0.6);
+    }
+
+    .hud-level {
+      font-size: 13px;
+      color: #4a6080;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    /* game over screen */
+    #gameOverScreen {
+      background: rgba(10, 10, 15, 0.92);
+      backdrop-filter: blur(12px);
+    }
+
+    .go-title {
+      font-size: 36px;
+      font-weight: 900;
+      color: #f87171;
+      letter-spacing: 2px;
+      text-shadow: 0 0 30px rgba(248,113,113,0.5);
+    }
+
+    .go-score-label {
+      font-size: 13px;
+      color: #4a5568;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+
+    .go-score-value {
+      font-size: 64px;
+      font-weight: 900;
+      color: #fff;
+      line-height: 1;
+      text-shadow: 0 0 30px rgba(100,180,255,0.4);
+    }
+
+    .go-best {
+      font-size: 14px;
+      color: #a78bfa;
+      letter-spacing: 1px;
+    }
+
+    .go-score-block {
+      text-align: center;
+    }
+
+    /* bottom danger zone bar */
+    #dangerBar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #f87171, #f472b6, #a78bfa, #64b4ff);
+      opacity: 0;
+      z-index: 5;
+      transition: opacity 0.2s;
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <canvas id="gameCanvas" width="360" height="640"></canvas>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <div class="hud-score" id="scoreDisplay">0</div>
+    <div class="hud-level" id="levelDisplay">LV 1</div>
+  </div>
+
+  <!-- Start Screen -->
+  <div class="screen" id="startScreen">
+    <div class="logo">
+      <div class="logo-title">MAGIC<br>TILES</div>
+      <div class="logo-subtitle">Piano Game</div>
+      <div class="piano-keys">
+        <div class="piano-key"></div>
+        <div class="piano-key"></div>
+        <div class="piano-key"></div>
+        <div class="piano-key"></div>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="startBtn">PLAY</button>
+    <div class="hint">Tap the dark tiles &middot; Don't miss any</div>
+  </div>
+
+  <!-- Game Over Screen -->
+  <div class="screen hidden" id="gameOverScreen">
+    <div class="go-title">GAME OVER</div>
+    <div class="go-score-block">
+      <div class="go-score-label">Score</div>
+      <div class="go-score-value" id="finalScore">0</div>
+      <div class="go-best" id="bestScore"></div>
+    </div>
+    <button class="btn btn-primary" id="restartBtn">PLAY AGAIN</button>
+  </div>
+
+  <!-- Bottom danger indicator -->
+  <div id="dangerBar"></div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  const canvas = document.getElementById('gameCanvas');
+  const ctx    = canvas.getContext('2d');
+
+  const W = canvas.width;   // 360
+  const H = canvas.height;  // 640
+
+  const COL_COUNT  = 4;
+  const COL_W      = W / COL_COUNT;   // 90
+  const TILE_H     = 140;
+  const GAP        = 4;
+  const TILE_INNER = COL_W - GAP;
+
+  // UI refs
+  const startScreen    = document.getElementById('startScreen');
+  const gameOverScreen = document.getElementById('gameOverScreen');
+  const hud            = document.getElementById('hud');
+  const scoreDisplay   = document.getElementById('scoreDisplay');
+  const levelDisplay   = document.getElementById('levelDisplay');
+  const finalScoreEl   = document.getElementById('finalScore');
+  const bestScoreEl    = document.getElementById('bestScore');
+  const startBtn       = document.getElementById('startBtn');
+  const restartBtn     = document.getElementById('restartBtn');
+  const dangerBar      = document.getElementById('dangerBar');
+
+  // Game state
+  let state = 'start';
+  let score, best, level, speed, spawnInterval, timeSinceSpawn, lastTime;
+  let tiles, particles, flashEffects;
+  let animId;
+
+  const COLUMN_COLORS = [
+    { h: 210, s: '80%', l: '60%' },
+    { h: 270, s: '70%', l: '65%' },
+    { h: 330, s: '75%', l: '65%' },
+    { h: 160, s: '60%', l: '55%' },
+  ];
+
+  // Init / Reset
+  function init() {
+    score          = 0;
+    level          = 1;
+    speed          = 220;
+    spawnInterval  = 720;
+    timeSinceSpawn = 0;
+    lastTime       = null;
+    tiles          = [];
+    particles      = [];
+    flashEffects   = [];
+    updateHUD();
+  }
+
+  // Tile object
+  function createTile(col) {
+    return {
+      col,
+      x: col * COL_W + GAP / 2,
+      y: -TILE_H,
+      w: TILE_INNER,
+      h: TILE_H,
+      hit: false,
+      alpha: 1,
+    };
+  }
+
+  // Particles
+  function spawnParticles(tx, ty, tw, th, col) {
+    const c  = COLUMN_COLORS[col];
+    const cx = tx + tw / 2;
+    const cy = ty + th / 2;
+    for (let i = 0; i < 22; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const spd   = 60 + Math.random() * 260;
+      const life  = 0.5 + Math.random() * 0.4;
+      particles.push({
+        x: cx, y: cy,
+        vx: Math.cos(angle) * spd,
+        vy: Math.sin(angle) * spd,
+        r: 2 + Math.random() * 4,
+        alpha: 1,
+        hue: c.h + (Math.random() - 0.5) * 30,
+        life,
+        maxLife: life,
+      });
+    }
+    flashEffects.push({ x: tx, y: ty, w: tw, h: th, col, alpha: 0.8, life: 0.25 });
+  }
+
+  // Scoring
+  function addScore() {
+    score++;
+    const newLevel = Math.floor(score / 10) + 1;
+    if (newLevel > level) {
+      level          = newLevel;
+      speed          = 220 + (level - 1) * 28;
+      spawnInterval  = Math.max(320, 720 - (level - 1) * 40);
+    }
+    updateHUD();
+  }
+
+  function updateHUD() {
+    scoreDisplay.textContent = score;
+    levelDisplay.textContent = 'LV ' + level;
+  }
+
+  // Spawning
+  let lastSpawnCol = -1;
+
+  function spawnTile() {
+    let col;
+    do { col = Math.floor(Math.random() * COL_COUNT); }
+    while (col === lastSpawnCol && Math.random() < 0.6);
+    lastSpawnCol = col;
+    tiles.push(createTile(col));
+  }
+
+  // Game Over
+  function triggerGameOver() {
+    if (state !== 'playing') return;
+    state = 'over';
+    cancelAnimationFrame(animId);
+
+    if (score > best) best = score;
+    localStorage.setItem('mt_best', best);
+
+    finalScoreEl.textContent = score;
+    bestScoreEl.textContent  = best > score
+      ? 'Best: ' + best
+      : score > 0 ? '★ New Best!' : '';
+
+    hud.classList.add('hidden');
+    dangerBar.style.opacity = '0';
+    gameOverScreen.classList.remove('hidden');
+  }
+
+  // Input handling
+  function getCanvasPos(e) {
+    const rect  = canvas.getBoundingClientRect();
+    const scaleX = W / rect.width;
+    const scaleY = H / rect.height;
+    let cx, cy;
+    if (e.touches && e.touches.length > 0) {
+      cx = (e.touches[0].clientX - rect.left) * scaleX;
+      cy = (e.touches[0].clientY - rect.top)  * scaleY;
+    } else {
+      cx = (e.clientX - rect.left) * scaleX;
+      cy = (e.clientY - rect.top)  * scaleY;
+    }
+    return { x: cx, y: cy };
+  }
+
+  function handleInput(e) {
+    if (state !== 'playing') return;
+    e.preventDefault();
+
+    const pos    = getCanvasPos(e);
+    let hitAny   = false;
+
+    for (let i = tiles.length - 1; i >= 0; i--) {
+      const t = tiles[i];
+      if (t.hit) continue;
+      if (pos.x >= t.x && pos.x <= t.x + t.w &&
+          pos.y >= t.y && pos.y <= t.y + t.h) {
+        t.hit  = true;
+        hitAny = true;
+        spawnParticles(t.x, t.y, t.w, t.h, t.col);
+        addScore();
+        break;
+      }
+    }
+
+    if (!hitAny) triggerGameOver();
+  }
+
+  // Draw helpers
+  function drawBackground() {
+    ctx.fillStyle = '#0d0d14';
+    ctx.fillRect(0, 0, W, H);
+
+    // column dividers
+    ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+    ctx.lineWidth   = 1;
+    for (let c = 1; c < COL_COUNT; c++) {
+      ctx.beginPath();
+      ctx.moveTo(c * COL_W, 0);
+      ctx.lineTo(c * COL_W, H);
+      ctx.stroke();
+    }
+
+    // scanlines
+    for (let y = 0; y < H; y += 4) {
+      ctx.fillStyle = 'rgba(0,0,0,0.1)';
+      ctx.fillRect(0, y, W, 1);
+    }
+  }
+
+  function roundRect(cx, x, y, w, h, r) {
+    cx.beginPath();
+    cx.moveTo(x + r, y);
+    cx.lineTo(x + w - r, y);
+    cx.quadraticCurveTo(x + w, y, x + w, y + r);
+    cx.lineTo(x + w, y + h - r);
+    cx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    cx.lineTo(x + r, y + h);
+    cx.quadraticCurveTo(x, y + h, x, y + h - r);
+    cx.lineTo(x, y + r);
+    cx.quadraticCurveTo(x, y, x + r, y);
+    cx.closePath();
+  }
+
+  function drawTile(t) {
+    if (t.alpha <= 0) return;
+    const c = COLUMN_COLORS[t.col];
+
+    ctx.save();
+    ctx.globalAlpha = t.alpha;
+
+    // body gradient
+    const grad = ctx.createLinearGradient(t.x, t.y, t.x, t.y + t.h);
+    grad.addColorStop(0, `hsl(${c.h},${c.s},22%)`);
+    grad.addColorStop(1, `hsl(${c.h},${c.s},14%)`);
+    ctx.fillStyle = grad;
+    roundRect(ctx, t.x, t.y, t.w, t.h, 8);
+    ctx.fill();
+
+    // top glow stripe
+    const stripe = ctx.createLinearGradient(t.x, t.y, t.x, t.y + 40);
+    stripe.addColorStop(0, `hsla(${c.h},${c.s},${c.l},0.55)`);
+    stripe.addColorStop(1, `hsla(${c.h},${c.s},${c.l},0)`);
+    ctx.fillStyle = stripe;
+    roundRect(ctx, t.x, t.y, t.w, 40, 8);
+    ctx.fill();
+
+    // border
+    ctx.strokeStyle = `hsla(${c.h},${c.s},${c.l},0.4)`;
+    ctx.lineWidth   = 1.5;
+    roundRect(ctx, t.x + 0.75, t.y + 0.75, t.w - 1.5, t.h - 1.5, 8);
+    ctx.stroke();
+
+    // shimmer line
+    ctx.strokeStyle = `hsla(${c.h},${c.s},80%,0.1)`;
+    ctx.lineWidth   = 1;
+    ctx.beginPath();
+    ctx.moveTo(t.x + 8, t.y + 2);
+    ctx.lineTo(t.x + t.w - 8, t.y + 2);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  function drawParticles(dt) {
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.life -= dt;
+      if (p.life <= 0) { particles.splice(i, 1); continue; }
+      const t = p.life / p.maxLife;
+      p.x  += p.vx * dt;
+      p.y  += p.vy * dt;
+      p.vy += 400 * dt;
+      ctx.save();
+      ctx.globalAlpha  = t * p.alpha;
+      ctx.fillStyle    = `hsl(${p.hue},80%,65%)`;
+      ctx.shadowColor  = `hsl(${p.hue},80%,65%)`;
+      ctx.shadowBlur   = 6;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r * t, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  function drawFlash(dt) {
+    for (let i = flashEffects.length - 1; i >= 0; i--) {
+      const f = flashEffects[i];
+      f.life -= dt;
+      if (f.life <= 0) { flashEffects.splice(i, 1); continue; }
+      const c   = COLUMN_COLORS[f.col];
+      f.alpha   = (f.life / 0.25) * 0.8;
+      ctx.save();
+      ctx.globalAlpha = f.alpha;
+      ctx.fillStyle   = `hsl(${c.h},${c.s},${c.l})`;
+      ctx.shadowColor = `hsl(${c.h},${c.s},${c.l})`;
+      ctx.shadowBlur  = 40;
+      roundRect(ctx, f.x, f.y, f.w, f.h, 8);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  function drawHitZone() {
+    const y    = H - 60;
+    const grad = ctx.createLinearGradient(0, y - 2, 0, y + 2);
+    grad.addColorStop(0,   'rgba(100,180,255,0)');
+    grad.addColorStop(0.5, 'rgba(100,180,255,0.25)');
+    grad.addColorStop(1,   'rgba(100,180,255,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, y - 2, W, 4);
+  }
+
+  // Main loop
+  function loop(ts) {
+    animId = requestAnimationFrame(loop);
+
+    if (lastTime === null) lastTime = ts;
+    const dt = Math.min((ts - lastTime) / 1000, 0.05);
+    lastTime = ts;
+
+    timeSinceSpawn += dt * 1000;
+    if (timeSinceSpawn >= spawnInterval) {
+      spawnTile();
+      timeSinceSpawn = 0;
+    }
+
+    let gameOver = false;
+    for (let i = tiles.length - 1; i >= 0; i--) {
+      const t = tiles[i];
+      if (t.hit) {
+        t.alpha -= dt * 5;
+        if (t.alpha <= 0) tiles.splice(i, 1);
+        continue;
+      }
+      t.y += speed * dt;
+      if (t.y > H) {
+        gameOver = true;
+        break;
+      }
+    }
+
+    drawBackground();
+    drawHitZone();
+    drawFlash(dt);
+    for (const t of tiles) drawTile(t);
+    drawParticles(dt);
+
+    // danger glow
+    let nearBottom = false;
+    for (const t of tiles) {
+      if (!t.hit && t.y + t.h > H - 80) { nearBottom = true; break; }
+    }
+    dangerBar.style.opacity = nearBottom ? '1' : '0';
+
+    if (gameOver) triggerGameOver();
+  }
+
+  // Screen management
+  function showStart() {
+    state = 'start';
+    startScreen.classList.remove('hidden');
+    gameOverScreen.classList.add('hidden');
+    hud.classList.add('hidden');
+    dangerBar.style.opacity = '0';
+    drawBackground();
+  }
+
+  function startGame() {
+    cancelAnimationFrame(animId);
+    init();
+    state = 'playing';
+    startScreen.classList.add('hidden');
+    gameOverScreen.classList.add('hidden');
+    hud.classList.remove('hidden');
+    lastTime = null;
+    spawnTile();
+    animId = requestAnimationFrame(loop);
+  }
+
+  // Events
+  startBtn.addEventListener('click',     startGame);
+  restartBtn.addEventListener('click',   startGame);
+  canvas.addEventListener('mousedown',   handleInput);
+  canvas.addEventListener('touchstart',  handleInput, { passive: false });
+  document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+
+  // Boot
+  best = parseInt(localStorage.getItem('mt_best') || '0', 10);
+  showStart();
+})();
+</script>
+</body>
+</html>
