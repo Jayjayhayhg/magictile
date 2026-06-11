@@ -32,13 +32,11 @@
       box-shadow: 0 0 60px rgba(100, 180, 255, 0.15), 0 0 120px rgba(100, 180, 255, 0.05);
     }
 
-    /* ===== CANVAS ===== */
     #gameCanvas {
       display: block;
       background: #0d0d14;
     }
 
-    /* ===== OVERLAY SCREENS ===== */
     .screen {
       position: absolute;
       inset: 0;
@@ -48,6 +46,11 @@
       justify-content: center;
       gap: 24px;
       transition: opacity 0.4s ease;
+      pointer-events: none;
+    }
+
+    .screen.active {
+      pointer-events: all;
     }
 
     .screen.hidden {
@@ -55,171 +58,101 @@
       pointer-events: none;
     }
 
-    /* start screen */
-    #startScreen {
-      background: linear-gradient(180deg, #0d0d14 0%, #111120 100%);
-    }
-
-    .logo {
-      text-align: center;
-    }
-
-    .logo-title {
-      font-size: 42px;
-      font-weight: 900;
-      letter-spacing: 2px;
-      background: linear-gradient(135deg, #64b4ff, #a78bfa, #f472b6);
+    .screen-title {
+      font-size: 40px;
+      font-weight: 800;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #a78bfa, #60a5fa, #34d399);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      line-height: 1;
+      text-shadow: none;
+      filter: drop-shadow(0 0 20px rgba(167,139,250,0.5));
     }
 
-    .logo-subtitle {
-      font-size: 13px;
-      letter-spacing: 6px;
-      color: #4a5568;
-      text-transform: uppercase;
-      margin-top: 6px;
-    }
-
-    .piano-keys {
-      display: flex;
-      gap: 4px;
-      margin-top: 16px;
-    }
-
-    .piano-key {
-      width: 28px;
-      height: 72px;
-      border-radius: 0 0 6px 6px;
-      animation: keyBounce 1.2s ease-in-out infinite;
-    }
-
-    .piano-key:nth-child(1) { background: #64b4ff; animation-delay: 0s; }
-    .piano-key:nth-child(2) { background: #a78bfa; animation-delay: 0.15s; }
-    .piano-key:nth-child(3) { background: #f472b6; animation-delay: 0.3s; }
-    .piano-key:nth-child(4) { background: #34d399; animation-delay: 0.45s; }
-
-    @keyframes keyBounce {
-      0%, 100% { transform: scaleY(1); opacity: 0.7; }
-      50% { transform: scaleY(1.18); opacity: 1; }
+    .screen-sub {
+      font-size: 14px;
+      color: rgba(255,255,255,0.5);
+      letter-spacing: 1px;
+      text-align: center;
+      line-height: 1.6;
     }
 
     .btn {
-      padding: 14px 48px;
+      background: linear-gradient(135deg, #7c3aed, #2563eb);
       border: none;
-      border-radius: 50px;
+      color: #fff;
       font-size: 18px;
       font-weight: 700;
-      letter-spacing: 1px;
+      letter-spacing: 2px;
+      padding: 14px 48px;
+      border-radius: 50px;
       cursor: pointer;
-      transition: transform 0.15s, box-shadow 0.15s;
-      outline: none;
+      box-shadow: 0 0 24px rgba(124,58,237,0.4), 0 4px 20px rgba(0,0,0,0.4);
+      transition: transform 0.1s, box-shadow 0.1s;
+      pointer-events: all;
     }
 
-    .btn:active { transform: scale(0.95); }
+    .btn:active {
+      transform: scale(0.96);
+      box-shadow: 0 0 14px rgba(124,58,237,0.3);
+    }
 
-    .btn-primary {
-      background: linear-gradient(135deg, #64b4ff, #a78bfa);
+    #scoreDisplay, #bestDisplay {
+      font-size: 22px;
+      font-weight: 700;
       color: #fff;
-      box-shadow: 0 4px 24px rgba(100, 180, 255, 0.4);
     }
 
-    .btn-primary:hover {
-      box-shadow: 0 6px 32px rgba(100, 180, 255, 0.6);
-      transform: translateY(-2px);
+    #scoreDisplay span, #bestDisplay span {
+      font-size: 36px;
+      background: linear-gradient(90deg, #a78bfa, #60a5fa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
 
-    .hint {
-      font-size: 12px;
-      color: #3d4966;
-      letter-spacing: 1px;
-      text-align: center;
-    }
-
-    /* HUD */
     #hud {
       position: absolute;
       top: 0;
       left: 0;
       right: 0;
-      height: 56px;
+      padding: 12px 18px;
       display: flex;
-      align-items: center;
       justify-content: space-between;
-      padding: 0 20px;
-      background: linear-gradient(180deg, rgba(13,13,20,0.95) 0%, rgba(13,13,20,0) 100%);
+      align-items: flex-start;
       pointer-events: none;
       z-index: 10;
     }
 
-    #hud.hidden { display: none; }
+    .hud-item {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
 
-    .hud-score {
+    .hud-item.right {
+      align-items: flex-end;
+    }
+
+    .hud-label {
+      font-size: 10px;
+      color: rgba(255,255,255,0.4);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .hud-value {
       font-size: 28px;
-      font-weight: 900;
-      color: #fff;
-      text-shadow: 0 0 20px rgba(100,180,255,0.6);
-    }
-
-    .hud-level {
-      font-size: 13px;
-      color: #4a6080;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-    }
-
-    /* game over screen */
-    #gameOverScreen {
-      background: rgba(10, 10, 15, 0.92);
-      backdrop-filter: blur(12px);
-    }
-
-    .go-title {
-      font-size: 36px;
-      font-weight: 900;
-      color: #f87171;
-      letter-spacing: 2px;
-      text-shadow: 0 0 30px rgba(248,113,113,0.5);
-    }
-
-    .go-score-label {
-      font-size: 13px;
-      color: #4a5568;
-      letter-spacing: 3px;
-      text-transform: uppercase;
-    }
-
-    .go-score-value {
-      font-size: 64px;
-      font-weight: 900;
+      font-weight: 800;
       color: #fff;
       line-height: 1;
-      text-shadow: 0 0 30px rgba(100,180,255,0.4);
+      text-shadow: 0 0 12px rgba(167,139,250,0.6);
     }
 
-    .go-best {
-      font-size: 14px;
-      color: #a78bfa;
-      letter-spacing: 1px;
-    }
-
-    .go-score-block {
-      text-align: center;
-    }
-
-    /* bottom danger zone bar */
-    #dangerBar {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 3px;
-      background: linear-gradient(90deg, #f87171, #f472b6, #a78bfa, #64b4ff);
-      opacity: 0;
-      z-index: 5;
-      transition: opacity 0.2s;
+    #gameOverScreen .screen-title {
+      font-size: 36px;
     }
   </style>
 </head>
@@ -227,422 +160,808 @@
 <div id="app">
   <canvas id="gameCanvas" width="360" height="640"></canvas>
 
-  <!-- HUD -->
-  <div id="hud" class="hidden">
-    <div class="hud-score" id="scoreDisplay">0</div>
-    <div class="hud-level" id="levelDisplay">LV 1</div>
+  <div id="hud">
+    <div class="hud-item">
+      <div class="hud-label">Score</div>
+      <div class="hud-value" id="hudScore">0</div>
+    </div>
+    <div class="hud-item right">
+      <div class="hud-label">Level</div>
+      <div class="hud-value" id="hudLevel">1</div>
+    </div>
   </div>
 
   <!-- Start Screen -->
-  <div class="screen" id="startScreen">
-    <div class="logo">
-      <div class="logo-title">MAGIC<br>TILES</div>
-      <div class="logo-subtitle">Piano Game</div>
-      <div class="piano-keys">
-        <div class="piano-key"></div>
-        <div class="piano-key"></div>
-        <div class="piano-key"></div>
-        <div class="piano-key"></div>
-      </div>
-    </div>
-    <button class="btn btn-primary" id="startBtn">PLAY</button>
-    <div class="hint">Tap the dark tiles &middot; Don't miss any</div>
+  <div class="screen active" id="startScreen">
+    <div class="screen-title">Magic Tiles</div>
+    <div class="screen-sub">Tap short tiles · Hold long tiles<br>Don't miss · Don't click empty space</div>
+    <button class="btn" id="startBtn">TAP TO PLAY</button>
   </div>
 
   <!-- Game Over Screen -->
   <div class="screen hidden" id="gameOverScreen">
-    <div class="go-title">GAME OVER</div>
-    <div class="go-score-block">
-      <div class="go-score-label">Score</div>
-      <div class="go-score-value" id="finalScore">0</div>
-      <div class="go-best" id="bestScore"></div>
-    </div>
-    <button class="btn btn-primary" id="restartBtn">PLAY AGAIN</button>
+    <div class="screen-title">GAME OVER</div>
+    <div id="scoreDisplay">Score <span id="finalScore">0</span></div>
+    <div id="bestDisplay">Best <span id="bestScore">0</span></div>
+    <button class="btn" id="restartBtn">PLAY AGAIN</button>
   </div>
-
-  <!-- Bottom danger indicator -->
-  <div id="dangerBar"></div>
 </div>
 
 <script>
-(function () {
+(function() {
   'use strict';
 
-  const canvas = document.getElementById('gameCanvas');
-  const ctx    = canvas.getContext('2d');
+  // ─── Constants ────────────────────────────────────────────────────────────
+  const CANVAS_W = 360;
+  const CANVAS_H = 640;
+  const NUM_COLS = 4;
+  const COL_W = CANVAS_W / NUM_COLS;
+  const HIT_ZONE_H = 80;   // height of hit zone from bottom
+  const HIT_ZONE_Y = CANVAS_H - HIT_ZONE_H;
+  const SHORT_H = 100;
+  const LONG_H_MIN = 200;
+  const LONG_H_MAX = 300;
+  const BASE_SPEED = 3.5;
+  const SPEED_INC = 0.35;
+  const LONG_RATIO = 0.3; // 30% long tiles
 
-  const W = canvas.width;   // 360
-  const H = canvas.height;  // 640
-
-  const COL_COUNT  = 4;
-  const COL_W      = W / COL_COUNT;   // 90
-  const TILE_H     = 140;
-  const GAP        = 4;
-  const TILE_INNER = COL_W - GAP;
-
-  // UI refs
-  const startScreen    = document.getElementById('startScreen');
-  const gameOverScreen = document.getElementById('gameOverScreen');
-  const hud            = document.getElementById('hud');
-  const scoreDisplay   = document.getElementById('scoreDisplay');
-  const levelDisplay   = document.getElementById('levelDisplay');
-  const finalScoreEl   = document.getElementById('finalScore');
-  const bestScoreEl    = document.getElementById('bestScore');
-  const startBtn       = document.getElementById('startBtn');
-  const restartBtn     = document.getElementById('restartBtn');
-  const dangerBar      = document.getElementById('dangerBar');
-
-  // Game state
-  let state = 'start';
-  let score, best, level, speed, spawnInterval, timeSinceSpawn, lastTime;
-  let tiles, particles, flashEffects;
-  let animId;
-
-  const COLUMN_COLORS = [
-    { h: 210, s: '80%', l: '60%' },
-    { h: 270, s: '70%', l: '65%' },
-    { h: 330, s: '75%', l: '65%' },
-    { h: 160, s: '60%', l: '55%' },
+  const COL_COLORS = [
+    { r: 167, g: 139, b: 250 }, // purple
+    { r: 96,  g: 165, b: 250 }, // blue
+    { r: 52,  g: 211, b: 153 }, // green
+    { r: 251, g: 191, b: 36  }, // amber
   ];
 
-  // Init / Reset
-  function init() {
-    score          = 0;
-    level          = 1;
-    speed          = 220;
-    spawnInterval  = 720;
-    timeSinceSpawn = 0;
-    lastTime       = null;
-    tiles          = [];
-    particles      = [];
-    flashEffects   = [];
-    updateHUD();
+  // ─── State ────────────────────────────────────────────────────────────────
+  let gameState = 'start'; // 'start' | 'playing' | 'over'
+  let score = 0;
+  let bestScore = 0;
+  let level = 1;
+  let speed = BASE_SPEED;
+  let tiles = [];
+  let particles = [];
+  let activeTouches = {}; // touchId/mouseId -> { col, tile }
+  let animId = null;
+  let lastSpawnY = {}; // col -> last tile bottom Y (to space tiles)
+  let spawnTimer = 0;
+  let spawnInterval = 80; // frames between spawns (decreases with level)
+  let pendingGameOver = false;
+
+  // ─── Canvas ───────────────────────────────────────────────────────────────
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // ─── Audio ────────────────────────────────────────────────────────────────
+  let audioCtx = null;
+  let masterGain = null;
+  let musicStarted = false;
+
+  function initAudio() {
+    if (audioCtx) return;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = 0.6;
+    masterGain.connect(audioCtx.destination);
   }
 
-  // Tile object
-  function createTile(col) {
-    return {
-      col,
-      x: col * COL_W + GAP / 2,
-      y: -TILE_H,
-      w: TILE_INNER,
-      h: TILE_H,
-      hit: false,
-      alpha: 1,
+  function playDing(freq = 880, duration = 0.15, vol = 0.4) {
+    if (!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(masterGain);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(freq * 0.8, audioCtx.currentTime + duration);
+    gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+  }
+
+  function playMiss() {
+    if (!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(masterGain);
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(120, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(60, audioCtx.currentTime + 0.25);
+    gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.3);
+  }
+
+  // Long note: returns a stop function
+  function startLongNote(col) {
+    if (!audioCtx) return () => {};
+    const freqs = [523, 659, 784, 1047]; // C5, E5, G5, C6
+    const freq = freqs[col];
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    const vib = audioCtx.createOscillator();
+    const vibGain = audioCtx.createGain();
+    vib.frequency.value = 5;
+    vib.connect(vibGain);
+    vibGain.gain.value = 4;
+    vibGain.connect(osc.frequency);
+    osc.connect(gain);
+    gain.connect(masterGain);
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.35, audioCtx.currentTime + 0.05);
+    osc.start();
+    vib.start();
+    return function stop() {
+      const t = audioCtx.currentTime;
+      gain.gain.setValueAtTime(gain.gain.value, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+      osc.stop(t + 0.2);
+      vib.stop(t + 0.2);
     };
   }
 
-  // Particles
-  function spawnParticles(tx, ty, tw, th, col) {
-    const c  = COLUMN_COLORS[col];
-    const cx = tx + tw / 2;
-    const cy = ty + th / 2;
-    for (let i = 0; i < 22; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const spd   = 60 + Math.random() * 260;
-      const life  = 0.5 + Math.random() * 0.4;
-      particles.push({
-        x: cx, y: cy,
-        vx: Math.cos(angle) * spd,
-        vy: Math.sin(angle) * spd,
-        r: 2 + Math.random() * 4,
-        alpha: 1,
-        hue: c.h + (Math.random() - 0.5) * 30,
-        life,
-        maxLife: life,
-      });
+  // ─── Background Music ─────────────────────────────────────────────────────
+  function startMusic() {
+    if (!audioCtx || musicStarted) return;
+    musicStarted = true;
+
+    const bpm = 128;
+    const beat = 60 / bpm;
+    const bar = beat * 4;
+
+    function playKick(time) {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain); gain.connect(masterGain);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(150, time);
+      osc.frequency.exponentialRampToValueAtTime(40, time + 0.12);
+      gain.gain.setValueAtTime(0.7, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.2);
+      osc.start(time); osc.stop(time + 0.25);
     }
-    flashEffects.push({ x: tx, y: ty, w: tw, h: th, col, alpha: 0.8, life: 0.25 });
-  }
 
-  // Scoring
-  function addScore() {
-    score++;
-    const newLevel = Math.floor(score / 10) + 1;
-    if (newLevel > level) {
-      level          = newLevel;
-      speed          = 220 + (level - 1) * 28;
-      spawnInterval  = Math.max(320, 720 - (level - 1) * 40);
+    function playSnare(time) {
+      const bufSize = audioCtx.sampleRate * 0.1;
+      const buf = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1);
+      const src = audioCtx.createBufferSource();
+      src.buffer = buf;
+      const gain = audioCtx.createGain();
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'highpass';
+      filter.frequency.value = 1200;
+      src.connect(filter); filter.connect(gain); gain.connect(masterGain);
+      gain.gain.setValueAtTime(0.35, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.12);
+      src.start(time); src.stop(time + 0.15);
     }
-    updateHUD();
-  }
 
-  function updateHUD() {
-    scoreDisplay.textContent = score;
-    levelDisplay.textContent = 'LV ' + level;
-  }
-
-  // Spawning
-  let lastSpawnCol = -1;
-
-  function spawnTile() {
-    let col;
-    do { col = Math.floor(Math.random() * COL_COUNT); }
-    while (col === lastSpawnCol && Math.random() < 0.6);
-    lastSpawnCol = col;
-    tiles.push(createTile(col));
-  }
-
-  // Game Over
-  function triggerGameOver() {
-    if (state !== 'playing') return;
-    state = 'over';
-    cancelAnimationFrame(animId);
-
-    if (score > best) best = score;
-    localStorage.setItem('mt_best', best);
-
-    finalScoreEl.textContent = score;
-    bestScoreEl.textContent  = best > score
-      ? 'Best: ' + best
-      : score > 0 ? '★ New Best!' : '';
-
-    hud.classList.add('hidden');
-    dangerBar.style.opacity = '0';
-    gameOverScreen.classList.remove('hidden');
-  }
-
-  // Input handling
-  function getCanvasPos(e) {
-    const rect  = canvas.getBoundingClientRect();
-    const scaleX = W / rect.width;
-    const scaleY = H / rect.height;
-    let cx, cy;
-    if (e.touches && e.touches.length > 0) {
-      cx = (e.touches[0].clientX - rect.left) * scaleX;
-      cy = (e.touches[0].clientY - rect.top)  * scaleY;
-    } else {
-      cx = (e.clientX - rect.left) * scaleX;
-      cy = (e.clientY - rect.top)  * scaleY;
+    function playHihat(time, open = false) {
+      const bufSize = audioCtx.sampleRate * (open ? 0.08 : 0.04);
+      const buf = audioCtx.createBuffer(1, Math.ceil(bufSize), audioCtx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1);
+      const src = audioCtx.createBufferSource();
+      src.buffer = buf;
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'highpass';
+      filter.frequency.value = 7000;
+      const gain = audioCtx.createGain();
+      src.connect(filter); filter.connect(gain); gain.connect(masterGain);
+      gain.gain.setValueAtTime(0.18, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + bufSize / audioCtx.sampleRate);
+      src.start(time); src.stop(time + 0.1);
     }
-    return { x: cx, y: cy };
-  }
 
-  function handleInput(e) {
-    if (state !== 'playing') return;
-    e.preventDefault();
+    // Pentatonic melody: C D E G A (minor penta)
+    const penta = [261.63, 293.66, 329.63, 392, 440, 523.25, 587.33, 659.25, 784, 880];
+    const melody = [0,2,4,5,4,2,0,1, 2,4,5,7,5,4,2,0];
+    let melodyIdx = 0;
 
-    const pos    = getCanvasPos(e);
-    let hitAny   = false;
+    function playMelNote(time, freq) {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain); gain.connect(masterGain);
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, time);
+      gain.gain.linearRampToValueAtTime(0.15, time + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + beat * 0.9);
+      osc.start(time); osc.stop(time + beat);
+    }
 
-    for (let i = tiles.length - 1; i >= 0; i--) {
-      const t = tiles[i];
-      if (t.hit) continue;
-      if (pos.x >= t.x && pos.x <= t.x + t.w &&
-          pos.y >= t.y && pos.y <= t.y + t.h) {
-        t.hit  = true;
-        hitAny = true;
-        spawnParticles(t.x, t.y, t.w, t.h, t.col);
-        addScore();
-        break;
+    function scheduleBar(startTime) {
+      for (let b = 0; b < 4; b++) {
+        const t = startTime + b * beat;
+        playHihat(t);
+        if (b === 0 || b === 2) playKick(t);
+        if (b === 1 || b === 3) playSnare(t);
+        // melody note every beat
+        playMelNote(t, penta[melody[melodyIdx % melody.length]]);
+        melodyIdx++;
       }
     }
 
-    if (!hitAny) triggerGameOver();
+    let nextBarTime = audioCtx.currentTime + 0.05;
+    function scheduler() {
+      if (!musicStarted) return;
+      while (nextBarTime < audioCtx.currentTime + 0.5) {
+        scheduleBar(nextBarTime);
+        nextBarTime += bar;
+      }
+      setTimeout(scheduler, 100);
+    }
+    scheduler();
   }
 
-  // Draw helpers
-  function drawBackground() {
-    ctx.fillStyle = '#0d0d14';
-    ctx.fillRect(0, 0, W, H);
+  function stopMusic() {
+    musicStarted = false;
+  }
 
-    // column dividers
-    ctx.strokeStyle = 'rgba(255,255,255,0.03)';
-    ctx.lineWidth   = 1;
-    for (let c = 1; c < COL_COUNT; c++) {
-      ctx.beginPath();
-      ctx.moveTo(c * COL_W, 0);
-      ctx.lineTo(c * COL_W, H);
-      ctx.stroke();
+  // ─── Screens ──────────────────────────────────────────────────────────────
+  const startScreen = document.getElementById('startScreen');
+  const gameOverScreen = document.getElementById('gameOverScreen');
+  const hudScore = document.getElementById('hudScore');
+  const hudLevel = document.getElementById('hudLevel');
+  const finalScore = document.getElementById('finalScore');
+  const bestScoreEl = document.getElementById('bestScore');
+
+  function showScreen(id) {
+    [startScreen, gameOverScreen].forEach(s => {
+      s.classList.remove('active');
+      s.classList.add('hidden');
+    });
+    if (id) {
+      const el = document.getElementById(id);
+      el.classList.remove('hidden');
+      el.classList.add('active');
+    }
+  }
+
+  // ─── Tile Factory ─────────────────────────────────────────────────────────
+  let tileIdCounter = 0;
+  function createTile(col) {
+    const isLong = Math.random() < LONG_RATIO;
+    const h = isLong ? (LONG_H_MIN + Math.random() * (LONG_H_MAX - LONG_H_MIN)) : SHORT_H;
+    return {
+      id: tileIdCounter++,
+      col,
+      x: col * COL_W,
+      y: -h,
+      w: COL_W - 4,
+      h,
+      isLong,
+      scored: false,
+      missed: false,
+      active: false,       // long tile: currently being held
+      holdComplete: false, // long tile: hold was completed successfully
+      holdStartY: null,    // y when hold began (tile bottom at HIT_ZONE_Y)
+      stopLongNote: null,
+      glowPhase: Math.random() * Math.PI * 2,
+    };
+  }
+
+  // ─── Game Init ────────────────────────────────────────────────────────────
+  function resetGame() {
+    tiles = [];
+    particles = [];
+    activeTouches = {};
+    score = 0;
+    level = 1;
+    speed = BASE_SPEED;
+    spawnTimer = 0;
+    spawnInterval = 80;
+    pendingGameOver = false;
+    lastSpawnY = {};
+    for (let c = 0; c < NUM_COLS; c++) lastSpawnY[c] = 0;
+    hudScore.textContent = '0';
+    hudLevel.textContent = '1';
+  }
+
+  // ─── Spawning ─────────────────────────────────────────────────────────────
+  function spawnTile() {
+    // Pick a random column
+    const col = Math.floor(Math.random() * NUM_COLS);
+    const minY = lastSpawnY[col] !== undefined ? lastSpawnY[col] : 0;
+    // Only spawn if enough gap
+    if (minY > -SHORT_H) return;
+    const tile = createTile(col);
+    tiles.push(tile);
+    lastSpawnY[col] = tile.y - 30;
+  }
+
+  // ─── Scoring / Level ──────────────────────────────────────────────────────
+  function addScore(pts) {
+    score += pts;
+    hudScore.textContent = score;
+    const newLevel = Math.floor(score / 10) + 1;
+    if (newLevel > level) {
+      level = newLevel;
+      speed = BASE_SPEED + (level - 1) * SPEED_INC;
+      spawnInterval = Math.max(30, 80 - (level - 1) * 5);
+      hudLevel.textContent = level;
+    }
+  }
+
+  // ─── Particles ────────────────────────────────────────────────────────────
+  function spawnParticles(x, y, col) {
+    const c = COL_COLORS[col];
+    for (let i = 0; i < 12; i++) {
+      const angle = (Math.PI * 2 * i) / 12 + Math.random() * 0.3;
+      const spd = 2 + Math.random() * 4;
+      particles.push({
+        x, y,
+        vx: Math.cos(angle) * spd,
+        vy: Math.sin(angle) * spd,
+        life: 1,
+        decay: 0.04 + Math.random() * 0.03,
+        r: c.r, g: c.g, b: c.b,
+        size: 3 + Math.random() * 3,
+      });
+    }
+  }
+
+  // ─── Game Over ────────────────────────────────────────────────────────────
+  function triggerGameOver() {
+    if (gameState !== 'playing') return;
+    gameState = 'over';
+    stopMusic();
+    // Stop all long notes
+    Object.values(activeTouches).forEach(info => {
+      if (info && info.tile && info.tile.stopLongNote) {
+        info.tile.stopLongNote();
+        info.tile.stopLongNote = null;
+      }
+    });
+    activeTouches = {};
+    playMiss();
+    if (score > bestScore) bestScore = score;
+    finalScore.textContent = score;
+    bestScoreEl.textContent = bestScore;
+    showScreen('gameOverScreen');
+  }
+
+  // ─── Hit Testing ──────────────────────────────────────────────────────────
+  function colFromX(x) {
+    return Math.floor(x / COL_W);
+  }
+
+  // Returns tile in hit zone for a column, or null
+  function getTileInHitZone(col) {
+    // Find the tile whose bottom is within hit zone range
+    for (const tile of tiles) {
+      if (tile.col !== col || tile.missed || tile.scored) continue;
+      const bottom = tile.y + tile.h;
+      const top = tile.y;
+      if (tile.isLong) {
+        // Long tile: hittable when bottom enters hit zone
+        if (bottom >= HIT_ZONE_Y - 30 && top < CANVAS_H) return tile;
+      } else {
+        // Short tile: hittable when bottom is in hit zone range
+        if (bottom >= HIT_ZONE_Y - 20 && bottom <= CANVAS_H + 10) return tile;
+      }
+    }
+    return null;
+  }
+
+  // ─── Input: Press ─────────────────────────────────────────────────────────
+  function onPress(id, x, y) {
+    if (gameState !== 'playing') return;
+    const col = colFromX(x);
+    if (col < 0 || col >= NUM_COLS) { triggerGameOver(); return; }
+
+    const tile = getTileInHitZone(col);
+    if (!tile) {
+      // Clicked empty space
+      triggerGameOver();
+      return;
     }
 
-    // scanlines
-    for (let y = 0; y < H; y += 4) {
-      ctx.fillStyle = 'rgba(0,0,0,0.1)';
-      ctx.fillRect(0, y, W, 1);
+    if (tile.isLong) {
+      if (!tile.active) {
+        tile.active = true;
+        tile.stopLongNote = startLongNote(col);
+        activeTouches[id] = { col, tile };
+      }
+    } else {
+      // Short tile: score immediately
+      if (!tile.scored) {
+        tile.scored = true;
+        addScore(1);
+        playDing(440 + col * 60, 0.15, 0.4);
+        spawnParticles(tile.x + tile.w / 2, HIT_ZONE_Y, col);
+        activeTouches[id] = { col, tile: null };
+      }
     }
   }
 
-  function roundRect(cx, x, y, w, h, r) {
-    cx.beginPath();
-    cx.moveTo(x + r, y);
-    cx.lineTo(x + w - r, y);
-    cx.quadraticCurveTo(x + w, y, x + w, y + r);
-    cx.lineTo(x + w, y + h - r);
-    cx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-    cx.lineTo(x + r, y + h);
-    cx.quadraticCurveTo(x, y + h, x, y + h - r);
-    cx.lineTo(x, y + r);
-    cx.quadraticCurveTo(x, y, x + r, y);
-    cx.closePath();
+  // ─── Input: Release ───────────────────────────────────────────────────────
+  function onRelease(id) {
+    if (gameState !== 'playing') return;
+    const info = activeTouches[id];
+    if (!info) return;
+    delete activeTouches[id];
+
+    const tile = info.tile;
+    if (!tile || !tile.isLong || !tile.active) return;
+
+    // Check if hold was complete
+    if (!tile.holdComplete) {
+      // Released too early
+      if (tile.stopLongNote) { tile.stopLongNote(); tile.stopLongNote = null; }
+      tile.active = false;
+      triggerGameOver();
+    }
+    // If holdComplete, release is fine — already scored
   }
 
-  function drawTile(t) {
-    if (t.alpha <= 0) return;
-    const c = COLUMN_COLORS[t.col];
+  // ─── Mouse ────────────────────────────────────────────────────────────────
+  canvas.addEventListener('mousedown', e => {
+    initAudio();
+    if (gameState === 'playing') {
+      const rect = canvas.getBoundingClientRect();
+      const sx = (e.clientX - rect.left) * (CANVAS_W / rect.width);
+      onPress('mouse', sx, 0);
+    }
+  });
+
+  window.addEventListener('mouseup', () => {
+    onRelease('mouse');
+  });
+
+  // ─── Touch ────────────────────────────────────────────────────────────────
+  canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    initAudio();
+    if (gameState === 'playing') {
+      const rect = canvas.getBoundingClientRect();
+      for (const t of e.changedTouches) {
+        const sx = (t.clientX - rect.left) * (CANVAS_W / rect.width);
+        onPress(t.identifier, sx, 0);
+      }
+    }
+  }, { passive: false });
+
+  canvas.addEventListener('touchend', e => {
+    e.preventDefault();
+    for (const t of e.changedTouches) {
+      onRelease(t.identifier);
+    }
+  }, { passive: false });
+
+  canvas.addEventListener('touchcancel', e => {
+    e.preventDefault();
+    for (const t of e.changedTouches) {
+      onRelease(t.identifier);
+    }
+  }, { passive: false });
+
+  // ─── Buttons ──────────────────────────────────────────────────────────────
+  document.getElementById('startBtn').addEventListener('click', () => {
+    initAudio();
+    startMusic();
+    resetGame();
+    gameState = 'playing';
+    showScreen(null);
+    if (animId) cancelAnimationFrame(animId);
+    loop();
+  });
+
+  document.getElementById('restartBtn').addEventListener('click', () => {
+    initAudio();
+    startMusic();
+    resetGame();
+    gameState = 'playing';
+    showScreen(null);
+    if (animId) cancelAnimationFrame(animId);
+    loop();
+  });
+
+  // ─── Draw Helpers ─────────────────────────────────────────────────────────
+  function drawRoundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  function rgbaStr(c, a) {
+    return `rgba(${c.r},${c.g},${c.b},${a})`;
+  }
+
+  // ─── Draw Tile ────────────────────────────────────────────────────────────
+  function drawTile(tile, now) {
+    const c = COL_COLORS[tile.col];
+    const x = tile.x + 2;
+    const y = tile.y;
+    const w = tile.w;
+    const h = tile.h;
+    const r = 8;
 
     ctx.save();
-    ctx.globalAlpha = t.alpha;
 
-    // body gradient
-    const grad = ctx.createLinearGradient(t.x, t.y, t.x, t.y + t.h);
-    grad.addColorStop(0, `hsl(${c.h},${c.s},22%)`);
-    grad.addColorStop(1, `hsl(${c.h},${c.s},14%)`);
-    ctx.fillStyle = grad;
-    roundRect(ctx, t.x, t.y, t.w, t.h, 8);
-    ctx.fill();
+    if (tile.isLong) {
+      // Long tile body
+      const pulse = tile.active
+        ? 0.85 + 0.15 * Math.sin(now * 0.012 + tile.glowPhase)
+        : 0.55 + 0.1 * Math.sin(now * 0.006 + tile.glowPhase);
 
-    // top glow stripe
-    const stripe = ctx.createLinearGradient(t.x, t.y, t.x, t.y + 40);
-    stripe.addColorStop(0, `hsla(${c.h},${c.s},${c.l},0.55)`);
-    stripe.addColorStop(1, `hsla(${c.h},${c.s},${c.l},0)`);
-    ctx.fillStyle = stripe;
-    roundRect(ctx, t.x, t.y, t.w, 40, 8);
-    ctx.fill();
+      // Base fill
+      const grad = ctx.createLinearGradient(x, y, x + w, y + h);
+      grad.addColorStop(0, rgbaStr(c, tile.active ? 0.9 : 0.55));
+      grad.addColorStop(0.5, rgbaStr(c, tile.active ? 0.7 : 0.4));
+      grad.addColorStop(1, rgbaStr(c, tile.active ? 0.9 : 0.55));
+      drawRoundRect(x, y, w, h, r);
+      ctx.fillStyle = grad;
+      ctx.fill();
 
-    // border
-    ctx.strokeStyle = `hsla(${c.h},${c.s},${c.l},0.4)`;
-    ctx.lineWidth   = 1.5;
-    roundRect(ctx, t.x + 0.75, t.y + 0.75, t.w - 1.5, t.h - 1.5, 8);
-    ctx.stroke();
+      // Side glow lines
+      const glowAlpha = pulse * (tile.active ? 1 : 0.7);
+      ctx.strokeStyle = rgbaStr(c, glowAlpha);
+      ctx.lineWidth = tile.active ? 4 : 2.5;
+      ctx.shadowColor = rgbaStr(c, 0.8);
+      ctx.shadowBlur = tile.active ? 18 : 10;
+      drawRoundRect(x, y, w, h, r);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
 
-    // shimmer line
-    ctx.strokeStyle = `hsla(${c.h},${c.s},80%,0.1)`;
-    ctx.lineWidth   = 1;
-    ctx.beginPath();
-    ctx.moveTo(t.x + 8, t.y + 2);
-    ctx.lineTo(t.x + t.w - 8, t.y + 2);
-    ctx.stroke();
+      // Hold bar at bottom of tile (indicator)
+      const barH = 12;
+      ctx.fillStyle = rgbaStr(c, tile.active ? 0.95 : 0.6);
+      ctx.shadowColor = rgbaStr(c, 0.9);
+      ctx.shadowBlur = tile.active ? 14 : 6;
+      drawRoundRect(x + 4, y + h - barH - 4, w - 8, barH, 4);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Top cap stripe
+      ctx.fillStyle = rgbaStr(c, tile.active ? 1 : 0.75);
+      ctx.shadowColor = rgbaStr(c, 1);
+      ctx.shadowBlur = tile.active ? 14 : 6;
+      drawRoundRect(x + 4, y + 4, w - 8, 10, 4);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // "HOLD" label
+      if (h > 80) {
+        ctx.fillStyle = `rgba(255,255,255,${tile.active ? 0.95 : 0.5})`;
+        ctx.font = `bold ${tile.active ? 13 : 11}px 'Segoe UI', sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = rgbaStr(c, 0.8);
+        ctx.shadowBlur = tile.active ? 10 : 4;
+        ctx.fillText('HOLD', x + w / 2, y + h / 2);
+        ctx.shadowBlur = 0;
+      }
+
+    } else {
+      // Short tile
+      // Dark base
+      drawRoundRect(x, y, w, h, r);
+      ctx.fillStyle = rgbaStr(c, 0.25);
+      ctx.fill();
+
+      // Top glow stripe
+      const stripeH = 18;
+      const stripeGrad = ctx.createLinearGradient(x, y, x, y + stripeH);
+      stripeGrad.addColorStop(0, rgbaStr(c, 0.9));
+      stripeGrad.addColorStop(1, rgbaStr(c, 0.1));
+      ctx.fillStyle = stripeGrad;
+      drawRoundRect(x, y, w, stripeH, r);
+      ctx.fill();
+
+      // Border glow
+      ctx.strokeStyle = rgbaStr(c, 0.6);
+      ctx.lineWidth = 2;
+      ctx.shadowColor = rgbaStr(c, 0.6);
+      ctx.shadowBlur = 8;
+      drawRoundRect(x, y, w, h, r);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
 
     ctx.restore();
   }
 
-  function drawParticles(dt) {
-    for (let i = particles.length - 1; i >= 0; i--) {
-      const p = particles[i];
-      p.life -= dt;
-      if (p.life <= 0) { particles.splice(i, 1); continue; }
-      const t = p.life / p.maxLife;
-      p.x  += p.vx * dt;
-      p.y  += p.vy * dt;
-      p.vy += 400 * dt;
+  // ─── Draw Particles ───────────────────────────────────────────────────────
+  function drawParticles() {
+    for (const p of particles) {
       ctx.save();
-      ctx.globalAlpha  = t * p.alpha;
-      ctx.fillStyle    = `hsl(${p.hue},80%,65%)`;
-      ctx.shadowColor  = `hsl(${p.hue},80%,65%)`;
-      ctx.shadowBlur   = 6;
+      ctx.globalAlpha = p.life;
+      ctx.fillStyle = `rgb(${p.r},${p.g},${p.b})`;
+      ctx.shadowColor = `rgb(${p.r},${p.g},${p.b})`;
+      ctx.shadowBlur = 6;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r * t, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }
   }
 
-  function drawFlash(dt) {
-    for (let i = flashEffects.length - 1; i >= 0; i--) {
-      const f = flashEffects[i];
-      f.life -= dt;
-      if (f.life <= 0) { flashEffects.splice(i, 1); continue; }
-      const c   = COLUMN_COLORS[f.col];
-      f.alpha   = (f.life / 0.25) * 0.8;
-      ctx.save();
-      ctx.globalAlpha = f.alpha;
-      ctx.fillStyle   = `hsl(${c.h},${c.s},${c.l})`;
-      ctx.shadowColor = `hsl(${c.h},${c.s},${c.l})`;
-      ctx.shadowBlur  = 40;
-      roundRect(ctx, f.x, f.y, f.w, f.h, 8);
-      ctx.fill();
-      ctx.restore();
+  // ─── Main Loop ────────────────────────────────────────────────────────────
+  let frameCount = 0;
+
+  function loop() {
+    frameCount++;
+    update();
+    draw();
+    if (gameState === 'playing') {
+      animId = requestAnimationFrame(loop);
     }
   }
 
-  function drawHitZone() {
-    const y    = H - 60;
-    const grad = ctx.createLinearGradient(0, y - 2, 0, y + 2);
-    grad.addColorStop(0,   'rgba(100,180,255,0)');
-    grad.addColorStop(0.5, 'rgba(100,180,255,0.25)');
-    grad.addColorStop(1,   'rgba(100,180,255,0)');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, y - 2, W, 4);
-  }
+  function update() {
+    if (gameState !== 'playing') return;
 
-  // Main loop
-  function loop(ts) {
-    animId = requestAnimationFrame(loop);
-
-    if (lastTime === null) lastTime = ts;
-    const dt = Math.min((ts - lastTime) / 1000, 0.05);
-    lastTime = ts;
-
-    timeSinceSpawn += dt * 1000;
-    if (timeSinceSpawn >= spawnInterval) {
+    // Spawn
+    spawnTimer++;
+    if (spawnTimer >= spawnInterval) {
+      spawnTimer = 0;
       spawnTile();
-      timeSinceSpawn = 0;
-    }
-
-    let gameOver = false;
-    for (let i = tiles.length - 1; i >= 0; i--) {
-      const t = tiles[i];
-      if (t.hit) {
-        t.alpha -= dt * 5;
-        if (t.alpha <= 0) tiles.splice(i, 1);
-        continue;
-      }
-      t.y += speed * dt;
-      if (t.y > H) {
-        gameOver = true;
-        break;
+      // Update lastSpawnY
+      for (const tile of tiles) {
+        if (!tile.scored && !tile.missed) {
+          const cur = lastSpawnY[tile.col];
+          if (cur === undefined || tile.y < cur) lastSpawnY[tile.col] = tile.y - 20;
+        }
       }
     }
 
-    drawBackground();
-    drawHitZone();
-    drawFlash(dt);
-    for (const t of tiles) drawTile(t);
-    drawParticles(dt);
-
-    // danger glow
-    let nearBottom = false;
-    for (const t of tiles) {
-      if (!t.hit && t.y + t.h > H - 80) { nearBottom = true; break; }
+    // Move tiles
+    for (const tile of tiles) {
+      if (!tile.scored || tile.isLong) {
+        tile.y += speed;
+        tile.glowPhase += 0.04;
+      }
     }
-    dangerBar.style.opacity = nearBottom ? '1' : '0';
 
-    if (gameOver) triggerGameOver();
+    // Check long tile logic
+    for (const tile of tiles) {
+      if (!tile.isLong || tile.missed || tile.holdComplete) continue;
+      const bottom = tile.y + tile.h;
+      const top = tile.y;
+
+      if (tile.active) {
+        // Player is holding: check if hold is complete (tile top passed hit zone)
+        if (top >= HIT_ZONE_Y) {
+          tile.holdComplete = true;
+          tile.active = false;
+          if (tile.stopLongNote) { tile.stopLongNote(); tile.stopLongNote = null; }
+          // Remove from activeTouches
+          for (const [id, info] of Object.entries(activeTouches)) {
+            if (info && info.tile === tile) { delete activeTouches[id]; break; }
+          }
+          tile.scored = true;
+          addScore(2);
+          spawnParticles(tile.x + tile.w / 2, HIT_ZONE_Y, tile.col);
+        }
+      } else {
+        // Not being held — check if tile has passed the hit zone without being scored
+        if (bottom > CANVAS_H + 20 && !tile.scored) {
+          tile.missed = true;
+          // Missed a long tile that wasn't held — game over
+          triggerGameOver();
+          return;
+        }
+      }
+    }
+
+    // Check short tiles missed (fell off screen unscored)
+    for (const tile of tiles) {
+      if (!tile.isLong && !tile.scored && !tile.missed) {
+        if (tile.y > CANVAS_H + 20) {
+          tile.missed = true;
+          triggerGameOver();
+          return;
+        }
+      }
+    }
+
+    // Remove old tiles
+    tiles = tiles.filter(t => t.y < CANVAS_H + 400 && !t.missed);
+
+    // Update particles
+    for (const p of particles) {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.15;
+      p.life -= p.decay;
+    }
+    particles = particles.filter(p => p.life > 0);
   }
 
-  // Screen management
-  function showStart() {
-    state = 'start';
-    startScreen.classList.remove('hidden');
-    gameOverScreen.classList.add('hidden');
-    hud.classList.add('hidden');
-    dangerBar.style.opacity = '0';
-    drawBackground();
+  function draw() {
+    const now = frameCount;
+
+    // Background
+    ctx.fillStyle = '#0d0d14';
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+    // Column dividers
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.lineWidth = 1;
+    for (let c = 1; c < NUM_COLS; c++) {
+      ctx.beginPath();
+      ctx.moveTo(c * COL_W, 0);
+      ctx.lineTo(c * COL_W, CANVAS_H);
+      ctx.stroke();
+    }
+
+    // Column background glow (subtle)
+    for (let c = 0; c < NUM_COLS; c++) {
+      const col = COL_COLORS[c];
+      const grad = ctx.createLinearGradient(c * COL_W, 0, (c + 1) * COL_W, 0);
+      grad.addColorStop(0, `rgba(${col.r},${col.g},${col.b},0)`);
+      grad.addColorStop(0.5, `rgba(${col.r},${col.g},${col.b},0.025)`);
+      grad.addColorStop(1, `rgba(${col.r},${col.g},${col.b},0)`);
+      ctx.fillStyle = grad;
+      ctx.fillRect(c * COL_W, 0, COL_W, CANVAS_H);
+    }
+
+    // Tiles
+    for (const tile of tiles) {
+      if (!tile.missed) drawTile(tile, now);
+    }
+
+    // Particles
+    drawParticles();
+
+    // Hit zone line
+    ctx.save();
+    const hitGrad = ctx.createLinearGradient(0, HIT_ZONE_Y, CANVAS_W, HIT_ZONE_Y);
+    hitGrad.addColorStop(0, 'rgba(167,139,250,0)');
+    hitGrad.addColorStop(0.25, 'rgba(167,139,250,0.8)');
+    hitGrad.addColorStop(0.5, 'rgba(96,165,250,0.9)');
+    hitGrad.addColorStop(0.75, 'rgba(52,211,153,0.8)');
+    hitGrad.addColorStop(1, 'rgba(52,211,153,0)');
+    ctx.strokeStyle = hitGrad;
+    ctx.lineWidth = 2.5;
+    ctx.shadowColor = 'rgba(167,139,250,0.6)';
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.moveTo(0, HIT_ZONE_Y);
+    ctx.lineTo(CANVAS_W, HIT_ZONE_Y);
+    ctx.stroke();
+    ctx.restore();
+
+    // Hit zone shading
+    ctx.fillStyle = 'rgba(255,255,255,0.015)';
+    ctx.fillRect(0, HIT_ZONE_Y, CANVAS_W, HIT_ZONE_H);
+
+    // Hit zone "PRESS" labels per column (faint)
+    for (let c = 0; c < NUM_COLS; c++) {
+      const col = COL_COLORS[c];
+      ctx.fillStyle = `rgba(${col.r},${col.g},${col.b},0.2)`;
+      ctx.font = '10px Segoe UI, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('▼', c * COL_W + COL_W / 2, HIT_ZONE_Y + HIT_ZONE_H / 2);
+    }
   }
 
-  function startGame() {
-    cancelAnimationFrame(animId);
-    init();
-    state = 'playing';
-    startScreen.classList.add('hidden');
-    gameOverScreen.classList.add('hidden');
-    hud.classList.remove('hidden');
-    lastTime = null;
-    spawnTile();
-    animId = requestAnimationFrame(loop);
+  // ─── Init ─────────────────────────────────────────────────────────────────
+  showScreen('startScreen');
+  // Draw idle background
+  function idleLoop() {
+    if (gameState !== 'start' && gameState !== 'over') return;
+    draw();
+    requestAnimationFrame(idleLoop);
   }
+  idleLoop();
 
-  // Events
-  startBtn.addEventListener('click',     startGame);
-  restartBtn.addEventListener('click',   startGame);
-  canvas.addEventListener('mousedown',   handleInput);
-  canvas.addEventListener('touchstart',  handleInput, { passive: false });
-  document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
-
-  // Boot
-  best = parseInt(localStorage.getItem('mt_best') || '0', 10);
-  showStart();
 })();
 </script>
 </body>
