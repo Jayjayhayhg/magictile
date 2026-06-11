@@ -650,6 +650,7 @@
     gameState = 'playing';
     showScreen(null);
     if (animId) cancelAnimationFrame(animId);
+    spawnTile();
     loop();
   });
 
@@ -660,6 +661,7 @@
     gameState = 'playing';
     showScreen(null);
     if (animId) cancelAnimationFrame(animId);
+    spawnTile();
     loop();
   });
 
