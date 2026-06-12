@@ -25,26 +25,61 @@ h1 {
   background:linear-gradient(135deg,#a78bfa,#5cf0ff,#f472b6);
   -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
 }
-/* HUD */
 #hud { width:360px; display:flex; align-items:center; justify-content:space-between; padding:0 8px; height:34px; }
 #hud .score { font-size:1.1rem; font-weight:800; letter-spacing:1px; }
 #hud .lives  { font-size:1.1rem; letter-spacing:2px; }
+#timerDisplay { font-size:.85rem; opacity:.5; letter-spacing:1px; }
 #progressBar { width:360px; height:4px; background:rgba(255,255,255,0.12); border-radius:2px; overflow:hidden; }
 #progressFill { height:100%; width:0%; border-radius:2px; background:linear-gradient(90deg,#a78bfa,#5cf0ff); transition:width .1s linear; }
 canvas { display:block; border-radius:8px; box-shadow:0 0 40px rgba(0,0,0,0.6); touch-action:none; -webkit-touch-callout:none; }
-/* Screens */
 .screen { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; border-radius:8px; }
-#startScreen { background:rgba(26,26,46,0.93); }
-#gameOverScreen { background:rgba(26,26,46,0.93); display:none; }
+#startScreen  { background:rgba(26,26,46,0.95); }
+#gameOverScreen { background:rgba(26,26,46,0.95); display:none; }
 .screen h2 { font-size:2rem; font-weight:900; }
-.screen p { font-size:.95rem; opacity:.55; }
+.screen p  { font-size:.95rem; opacity:.55; }
 .score-big { font-size:5rem; font-weight:900; line-height:1; }
-.best-txt { font-size:1rem; color:#a78bfa; }
+.best-txt  { font-size:1rem; color:#a78bfa; }
 .btn { background:#fff; color:#1a1a2e; border:none; border-radius:30px; padding:13px 40px; font-size:1rem; font-weight:700; cursor:pointer; transition:transform .12s; }
 .btn:active { transform:scale(0.96); }
-.btn-sec { background:rgba(255,255,255,0.12); color:#fff; margin-top:2px; }
 #comboDisplay { font-size:1.4rem; font-weight:900; opacity:0; transition:opacity .2s; color:#f472b6; text-align:center; height:1.8rem; }
 #canvasWrap { position:relative; }
+
+/* ── Quiz overlay ── */
+#quizOverlay {
+  display:none; position:absolute; inset:0;
+  background:rgba(10,10,30,0.97);
+  border-radius:8px;
+  flex-direction:column; align-items:center; justify-content:center;
+  gap:16px; padding:24px;
+  z-index:10;
+}
+#quizOverlay.show { display:flex; }
+#quizBadge {
+  font-size:.75rem; font-weight:700; letter-spacing:2px; text-transform:uppercase;
+  padding:4px 14px; border-radius:20px; background:#a78bfa; color:#fff;
+}
+#quizQ {
+  font-size:1.5rem; font-weight:900; text-align:center; line-height:1.35;
+  color:#fff;
+}
+#quizTimer {
+  font-size:.85rem; opacity:.45; letter-spacing:1px;
+}
+#quizOptions {
+  display:grid; grid-template-columns:1fr 1fr;
+  gap:10px; width:100%;
+}
+.quiz-opt {
+  padding:14px 8px; border-radius:12px; border:2px solid rgba(255,255,255,0.15);
+  background:rgba(255,255,255,0.07); color:#fff;
+  font-size:1rem; font-weight:700; cursor:pointer;
+  transition:background .15s, border-color .15s, transform .1s;
+  text-align:center;
+}
+.quiz-opt:active { transform:scale(0.97); }
+.quiz-opt.correct { background:rgba(52,211,153,0.3); border-color:#34d399; }
+.quiz-opt.wrong   { background:rgba(248,113,113,0.3); border-color:#f87171; }
+#quizResult { font-size:1.1rem; font-weight:800; min-height:1.4em; text-align:center; }
 </style>
 </head>
 <body>
@@ -58,28 +93,42 @@ canvas { display:block; border-radius:8px; box-shadow:0 0 40px rgba(0,0,0,0.6); 
   <div id="progressBar"><div id="progressFill"></div></div>
   <div id="canvasWrap">
     <canvas id="gameCanvas" width="360" height="520"></canvas>
+
+    <!-- Start -->
     <div class="screen" id="startScreen">
       <h2>🎵 Magic Tiles</h2>
-      <p>판정선에 맞춰 타일을 탭하세요</p>
-      <p style="font-size:.8rem;opacity:.35;">롱노트는 꾹 누르다가 끝에서 떼세요</p>
+      <p>판정선에 타일이 오면 탭하세요</p>
+      <p style="font-size:.78rem;opacity:.3;">10분마다 깜짝 퀴즈 등장!</p>
       <button class="btn" id="startBtn">TAP TO PLAY</button>
-      <p style="font-size:.75rem;opacity:.3;">키보드: A S D F</p>
+      <p style="font-size:.75rem;opacity:.25;">키보드: A S D F</p>
     </div>
+
+    <!-- Game Over -->
     <div class="screen" id="gameOverScreen">
       <h2>GAME OVER</h2>
       <div class="score-big" id="finalScore">0</div>
       <div class="best-txt" id="bestTxt"></div>
       <button class="btn" id="restartBtn">PLAY AGAIN</button>
     </div>
+
+    <!-- Quiz -->
+    <div id="quizOverlay">
+      <div id="quizBadge">⏸ 퀴즈 타임!</div>
+      <div id="quizQ"></div>
+      <div id="quizTimer"></div>
+      <div id="quizOptions"></div>
+      <div id="quizResult"></div>
+    </div>
   </div>
 </div>
 
 <script>
+// ── Constants ─────────────────────────────────────────────────────────────
 const W=360, H=520, COLS=4, COL_W=W/COLS;
 const SCROLL_SPD=4.5;
 const HIT_Y=H-90;
 const TILE_H=64;
-const MIN_GAP=0.30; // seconds between tiles
+const QUIZ_INTERVAL=10*60; // 10 minutes in seconds (change to e.g. 60 for 1 min testing)
 
 // ── Audio ─────────────────────────────────────────────────────────────────
 let ac=null;
@@ -88,7 +137,6 @@ function getAC(){
   if(ac.state==='suspended') ac.resume();
   return ac;
 }
-
 function ding(freq,vol=0.35){
   const a=getAC(),o=a.createOscillator(),g=a.createGain();
   o.connect(g); g.connect(a.destination);
@@ -97,7 +145,7 @@ function ding(freq,vol=0.35){
   g.gain.exponentialRampToValueAtTime(.001,a.currentTime+.18);
   o.start(); o.stop(a.currentTime+.18);
 }
-function miss(){
+function missSound(){
   const a=getAC(),o=a.createOscillator(),g=a.createGain();
   o.connect(g); g.connect(a.destination);
   o.type='sawtooth'; o.frequency.setValueAtTime(90,a.currentTime);
@@ -106,203 +154,233 @@ function miss(){
   g.gain.exponentialRampToValueAtTime(.001,a.currentTime+.25);
   o.start(); o.stop(a.currentTime+.25);
 }
-
-let holdOsc=null, holdGain=null;
-function startHold(freq){
-  stopHold();
-  const a=getAC(); holdOsc=a.createOscillator(); holdGain=a.createGain();
-  holdOsc.connect(holdGain); holdGain.connect(a.destination);
-  holdOsc.type='sine'; holdOsc.frequency.value=freq;
-  holdGain.gain.setValueAtTime(0,a.currentTime);
-  holdGain.gain.linearRampToValueAtTime(.15,a.currentTime+.06);
-  holdOsc.start();
+function correctSound(){
+  const a=getAC(), freqs=[523,659,784];
+  freqs.forEach((f,i)=>{
+    const o=a.createOscillator(),g=a.createGain();
+    o.connect(g); g.connect(a.destination);
+    o.type='triangle'; o.frequency.value=f;
+    const t=a.currentTime+i*0.12;
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.3,t+.02);
+    g.gain.exponentialRampToValueAtTime(.001,t+.22);
+    o.start(t); o.stop(t+.23);
+  });
 }
-function stopHold(){
-  if(!holdOsc) return;
-  try{ holdGain.gain.linearRampToValueAtTime(.001,ac.currentTime+.06); holdOsc.stop(ac.currentTime+.07); }catch(e){}
-  holdOsc=holdGain=null;
+function wrongSound(){
+  const a=getAC(), freqs=[220,196];
+  freqs.forEach((f,i)=>{
+    const o=a.createOscillator(),g=a.createGain();
+    o.connect(g); g.connect(a.destination);
+    o.type='sawtooth'; o.frequency.value=f;
+    const t=a.currentTime+i*0.15;
+    g.gain.setValueAtTime(.2,t);
+    g.gain.exponentialRampToValueAtTime(.001,t+.2);
+    o.start(t); o.stop(t+.21);
+  });
 }
 
-// Background music — looping beat + pentatonic melody
-let musicNodes=[];
+// Background music — seamless looping beat + pentatonic melody
+let musicNodes=[], musicPlaying=false;
 const BPM=128, BEAT=60/BPM;
 const PENTA=[261.63,293.66,329.63,392,440,523.25,587.33,659.25];
 
-function startMusic(){
-  stopMusic();
+function scheduleLoop(startT){
+  if(!musicPlaying) return;
   const a=getAC();
-  const now=a.currentTime+0.05;
-  const BARS=8, BAR=BEAT*4;
-  const TOTAL=BARS*BAR;
+  const BARS=8, BAR=BEAT*4, TOTAL=BARS*BAR;
 
-  // Schedule drums for BARS bars then loop via recursive schedule
-  function scheduleBeat(startT){
-    for(let b=0;b<BARS*4;b++){
-      const t=startT+b*BEAT;
-      // Kick on 1,3
-      if(b%4===0||b%4===2){
-        const o=a.createOscillator(),g=a.createGain();
-        o.connect(g); g.connect(a.destination);
-        o.frequency.setValueAtTime(150,t); o.frequency.exponentialRampToValueAtTime(40,t+.15);
-        g.gain.setValueAtTime(.45,t); g.gain.exponentialRampToValueAtTime(.001,t+.2);
-        o.start(t); o.stop(t+.2); musicNodes.push(o);
-      }
-      // Snare on 2,4
-      if(b%4===1||b%4===3){
-        const buf=a.createBuffer(1,a.sampleRate*.08,a.sampleRate);
-        const d=buf.getChannelData(0);
-        for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.exp(-i/(a.sampleRate*.03));
-        const s=a.createBufferSource(),g=a.createGain();
-        s.buffer=buf; s.connect(g); g.connect(a.destination);
-        g.gain.setValueAtTime(.25,t); g.gain.exponentialRampToValueAtTime(.001,t+.08);
-        s.start(t); musicNodes.push(s);
-      }
-      // Hi-hat every 8th
-      {
-        const buf=a.createBuffer(1,a.sampleRate*.025,a.sampleRate);
-        const d=buf.getChannelData(0);
-        for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.exp(-i/(a.sampleRate*.008));
-        const s=a.createBufferSource(),g=a.createGain();
-        s.buffer=buf; s.connect(g); g.connect(a.destination);
-        g.gain.setValueAtTime(.1,t); g.gain.exponentialRampToValueAtTime(.001,t+.025);
-        s.start(t); musicNodes.push(s);
-      }
-      // Hi-hat offbeat
-      {
-        const t2=t+BEAT/2;
-        const buf=a.createBuffer(1,a.sampleRate*.02,a.sampleRate);
-        const d=buf.getChannelData(0);
-        for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.exp(-i/(a.sampleRate*.006));
-        const s=a.createBufferSource(),g=a.createGain();
-        s.buffer=buf; s.connect(g); g.connect(a.destination);
-        g.gain.setValueAtTime(.07,t2); g.gain.exponentialRampToValueAtTime(.001,t2+.02);
-        s.start(t2); musicNodes.push(s);
-      }
+  for(let b=0;b<BARS*4;b++){
+    const t=startT+b*BEAT;
+    // Kick
+    if(b%4===0||b%4===2){
+      const o=a.createOscillator(),g=a.createGain();
+      o.connect(g); g.connect(a.destination);
+      o.frequency.setValueAtTime(150,t); o.frequency.exponentialRampToValueAtTime(40,t+.15);
+      g.gain.setValueAtTime(.45,t); g.gain.exponentialRampToValueAtTime(.001,t+.2);
+      o.start(t); o.stop(t+.2); musicNodes.push(o);
     }
-    // Pentatonic melody
-    const melLen=BARS*4;
-    for(let i=0;i<melLen;i++){
-      const t=startT+i*BEAT;
-      if(Math.random()<0.55){
-        const freq=PENTA[Math.floor(Math.random()*PENTA.length)];
-        const dur=BEAT*(Math.random()<0.25?2:1)*0.85;
-        const o=a.createOscillator(),g=a.createGain();
-        o.connect(g); g.connect(a.destination);
-        o.type='sine'; o.frequency.value=freq;
-        g.gain.setValueAtTime(0,t);
-        g.gain.linearRampToValueAtTime(.12,t+.02);
-        g.gain.setValueAtTime(.12,t+dur-.04);
-        g.gain.linearRampToValueAtTime(.001,t+dur);
-        o.start(t); o.stop(t+dur+.01); musicNodes.push(o);
-      }
+    // Snare
+    if(b%4===1||b%4===3){
+      const buf=a.createBuffer(1,a.sampleRate*.08,a.sampleRate);
+      const d=buf.getChannelData(0);
+      for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.exp(-i/(a.sampleRate*.03));
+      const s=a.createBufferSource(),g=a.createGain();
+      s.buffer=buf; s.connect(g); g.connect(a.destination);
+      g.gain.setValueAtTime(.22,t); g.gain.exponentialRampToValueAtTime(.001,t+.08);
+      s.start(t); musicNodes.push(s);
     }
-    // Loop
-    if(musicPlaying){
-      const next=startT+TOTAL;
-      const delay=(next-a.currentTime-0.1)*1000;
-      setTimeout(()=>{ if(musicPlaying) scheduleBeat(next); }, Math.max(0,delay));
+    // Hi-hat
+    for(const off of [0, BEAT/2]){
+      const t2=t+off;
+      const buf=a.createBuffer(1,a.sampleRate*.025,a.sampleRate);
+      const d=buf.getChannelData(0);
+      for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.exp(-i/(a.sampleRate*.007));
+      const s=a.createBufferSource(),g=a.createGain();
+      s.buffer=buf; s.connect(g); g.connect(a.destination);
+      g.gain.setValueAtTime(off===0?.1:.07,t2); g.gain.exponentialRampToValueAtTime(.001,t2+.025);
+      s.start(t2); musicNodes.push(s);
     }
   }
-  scheduleBeat(now);
+  // Melody
+  for(let i=0;i<BARS*4;i++){
+    const t=startT+i*BEAT;
+    if(Math.random()<0.5){
+      const freq=PENTA[Math.floor(Math.random()*PENTA.length)];
+      const dur=BEAT*(Math.random()<0.25?2:1)*0.82;
+      const o=a.createOscillator(),g=a.createGain();
+      o.connect(g); g.connect(a.destination);
+      o.type='sine'; o.frequency.value=freq;
+      g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.1,t+.02);
+      g.gain.setValueAtTime(.1,t+dur-.04); g.gain.linearRampToValueAtTime(.001,t+dur);
+      o.start(t); o.stop(t+dur+.01); musicNodes.push(o);
+    }
+  }
+  // Schedule next loop slightly before this one ends
+  const nextStart=startT+TOTAL;
+  const delay=(nextStart-a.currentTime-0.3)*1000;
+  setTimeout(()=>{ if(musicPlaying) scheduleLoop(nextStart); }, Math.max(100,delay));
 }
-let musicPlaying=false;
-function playMusic(){ musicPlaying=true; startMusic(); }
+function playMusic(){ musicPlaying=true; scheduleLoop(getAC().currentTime+0.05); }
 function stopMusic(){
   musicPlaying=false;
   musicNodes.forEach(n=>{ try{n.stop();}catch(e){} });
   musicNodes=[];
 }
 
+// ── Quiz Data ─────────────────────────────────────────────────────────────
+function makeQuizPool(){
+  const pool=[];
+  // 구구단
+  for(let a=2;a<=9;a++) for(let b=2;b<=9;b++){
+    const ans=a*b;
+    const wrongs=new Set();
+    while(wrongs.size<3){ const w=ans+Math.floor(Math.random()*10)-5; if(w!==ans&&w>0) wrongs.add(w); }
+    pool.push({ cat:'구구단', q:`${a} × ${b} = ?`, a:String(ans), opts:shuffle([String(ans),...[...wrongs].map(String)]) });
+  }
+  // 영어 단어
+  const words=[
+    ['apple','사과'],['banana','바나나'],['cat','고양이'],['dog','개'],['elephant','코끼리'],
+    ['fish','물고기'],['grape','포도'],['house','집'],['island','섬'],['jacket','재킷'],
+    ['key','열쇠'],['lion','사자'],['moon','달'],['night','밤'],['ocean','바다'],
+    ['pen','펜'],['queen','여왕'],['rain','비'],['sun','태양'],['tree','나무'],
+    ['umbrella','우산'],['violin','바이올린'],['water','물'],['x-ray','엑스레이'],['yellow','노란색'],
+    ['zebra','얼룩말'],['book','책'],['chair','의자'],['door','문'],['egg','달걀'],
+    ['flower','꽃'],['gift','선물'],['hat','모자'],['ice','얼음'],['juice','주스'],
+  ];
+  words.forEach(([en,ko])=>{
+    const others=words.filter(w=>w[0]!==en).map(w=>w[1]);
+    const wrongs=shuffle(others).slice(0,3);
+    pool.push({ cat:'영어', q:`"${en}" 의 뜻은?`, a:ko, opts:shuffle([ko,...wrongs]) });
+    // reverse
+    const othersEn=words.filter(w=>w[1]!==ko).map(w=>w[0]);
+    const wrongsEn=shuffle(othersEn).slice(0,3);
+    pool.push({ cat:'영어', q:`"${ko}" 를 영어로?`, a:en, opts:shuffle([en,...wrongsEn]) });
+  });
+  // 상식 퀴즈
+  const trivia=[
+    {q:'대한민국의 수도는?',a:'서울',opts:['서울','부산','인천','대구']},
+    {q:'태양계에서 가장 큰 행성은?',a:'목성',opts:['목성','토성','천왕성','해왕성']},
+    {q:'1년은 몇 개월?',a:'12개월',opts:['12개월','10개월','11개월','13개월']},
+    {q:'물의 화학식은?',a:'H₂O',opts:['H₂O','CO₂','NaCl','O₂']},
+    {q:'사람의 심장은 몇 개?',a:'1개',opts:['1개','2개','3개','4개']},
+    {q:'지구에서 가장 큰 대륙은?',a:'아시아',opts:['아시아','아프리카','유럽','북아메리카']},
+    {q:'피타고라스 정리: a²+b²=?',a:'c²',opts:['c²','c','2c','c³']},
+    {q:'빛의 속도는 약?',a:'30만 km/s',opts:['30만 km/s','3만 km/s','300만 km/s','3000 km/s']},
+    {q:'가장 많이 사용되는 프로그래밍 언어(2024)?',a:'Python',opts:['Python','Java','C++','JavaScript']},
+    {q:'지구의 표면 중 바다 비율은?',a:'약 71%',opts:['약 71%','약 51%','약 61%','약 81%']},
+    {q:'한국의 국화는?',a:'무궁화',opts:['무궁화','장미','벚꽃','국화']},
+    {q:'삼각형 내각의 합은?',a:'180°',opts:['180°','360°','90°','270°']},
+    {q:'사과가 나무에서 떨어지는 것: 어떤 힘?',a:'중력',opts:['중력','마찰력','탄성력','자기력']},
+    {q:'세계에서 가장 높은 산은?',a:'에베레스트',opts:['에베레스트','K2','마칸루','칸첸중가']},
+    {q:'혈액의 색이 빨간 이유는?',a:'헤모글로빈',opts:['헤모글로빈','멜라닌','콜라겐','케라틴']},
+    {q:'1+1=?',a:'2',opts:['2','3','1','4']},
+    {q:'100÷4=?',a:'25',opts:['25','20','30','15']},
+    {q:'지구 자전 주기는?',a:'약 24시간',opts:['약 24시간','약 12시간','약 48시간','약 365일']},
+    {q:'한글을 만든 왕은?',a:'세종대왕',opts:['세종대왕','태조','광해군','정조']},
+    {q:'오대양 중 가장 큰 바다는?',a:'태평양',opts:['태평양','대서양','인도양','북극해']},
+  ];
+  trivia.forEach(t=>pool.push({cat:'상식',...t}));
+  return pool;
+}
+
+function shuffle(arr){ return [...arr].sort(()=>Math.random()-.5); }
+
+const QUIZ_POOL=makeQuizPool();
+let usedQuizIdx=new Set();
+function getQuiz(){
+  if(usedQuizIdx.size>=QUIZ_POOL.length) usedQuizIdx.clear();
+  let idx;
+  do{ idx=Math.floor(Math.random()*QUIZ_POOL.length); } while(usedQuizIdx.has(idx));
+  usedQuizIdx.add(idx);
+  return QUIZ_POOL[idx];
+}
+
 // ── Game State ────────────────────────────────────────────────────────────
 const canvas=document.getElementById('gameCanvas');
 const ctx=canvas.getContext('2d');
-let st='start'; // start|playing|over
+let st='start';
 let tiles=[], score=0, combo=0, lives=3, best=0;
-let speed=SCROLL_SPD, spawnTimer=0, spawnInterval=90; // frames
-let lastSpawnCol=-1, lastSpawnTime=0;
-let frameCount=0, raf=null;
-let perfCnt=0, greatCnt=0, goodCnt=0, missCnt=0;
+let speed=SCROLL_SPD, spawnTimer=0, spawnInterval=90;
+let lastSpawnCol=-1;
+let raf=null, frameCount=0;
 let judgeFx=null, flashes=[];
-let holdingTile=[null,null,null,null];
-let longRatio=0.2; // probability of long tile
-
+let playTimeSec=0; // total play seconds
+let nextQuizAt=QUIZ_INTERVAL; // seconds until next quiz
+let quizActive=false, quizAnswered=false, quizTimeLeft=0;
 const COL_FREQS=[261,330,392,523];
 
 // ── Spawn ─────────────────────────────────────────────────────────────────
 function spawnTile(){
-  // Pick column, avoid repeating
-  let col;
-  let tries=0;
+  let col,tries=0;
   do{ col=Math.floor(Math.random()*COLS); tries++; }
-  while(col===lastSpawnCol && tries<5);
+  while(col===lastSpawnCol && tries<6);
   lastSpawnCol=col;
-
-  const isLong=Math.random()<longRatio;
-  const longDurFrames=isLong?Math.round((0.5+Math.random()*0.8)*60):0;
-  const h=isLong?Math.round(longDurFrames*speed)+TILE_H:TILE_H;
-
-  tiles.push({
-    col, x:col*COL_W, y:-h, h,
-    long:isLong, longFrames:longDurFrames,
-    hit:false, missed:false,
-    holding:false, holdProgress:0,
-    flash:0,
-  });
+  tiles.push({ col, x:col*COL_W, y:-TILE_H, h:TILE_H, hit:false, missed:false, flash:0 });
 }
 
 // ── Update ────────────────────────────────────────────────────────────────
-function update(){
+let lastFrameTime=null;
+function update(ts){
+  const dt=lastFrameTime?(ts-lastFrameTime)/1000:1/60;
+  lastFrameTime=ts;
+  if(quizActive) return;
+
+  playTimeSec+=dt;
   frameCount++;
+
+  // Quiz trigger
+  if(playTimeSec>=nextQuizAt){ triggerQuiz(); return; }
 
   // Spawn
   spawnTimer++;
-  if(spawnTimer>=spawnInterval){
-    spawnTile();
-    spawnTimer=0;
-  }
+  if(spawnTimer>=spawnInterval){ spawnTile(); spawnTimer=0; }
 
-  // Level up every 10 points
+  // Level
   const lvl=Math.floor(score/10);
   speed=SCROLL_SPD+lvl*0.3;
-  spawnInterval=Math.max(40, 90-lvl*5);
-  longRatio=Math.min(0.4, 0.2+lvl*0.02);
+  spawnInterval=Math.max(40,90-lvl*5);
 
-  // Update progress bar (based on score)
-  document.getElementById('progressFill').style.width=Math.min(100,(score%100))+'%';
+  // Progress bar = time until next quiz
+  const remain=nextQuizAt-playTimeSec;
+  const pct=100-Math.min(100,(remain/QUIZ_INTERVAL)*100);
+  document.getElementById('progressFill').style.width=pct+'%';
 
   // Move tiles
   for(let i=tiles.length-1;i>=0;i--){
     const t=tiles[i];
     if(t.missed){ tiles.splice(i,1); continue; }
-    if(t.hit&&!t.long){ t.flash-=0.08; if(t.flash<=0) tiles.splice(i,1); continue; }
-    if(t.hit&&t.long&&t.holding){
-      if(t.y<HIT_Y) t.y+=speed;
-      t.holdProgress+=speed/Math.max(1,t.h);
-      if(t.holdProgress>=1){
-        // Hold complete
-        t.holding=false; t.hit=false; t.missed=true;
-        const c=t.col; if(holdingTile[c]===t){holdingTile[c]=null; stopHold();}
-        addScore('perfect',c);
-      }
-      continue;
-    }
+    if(t.hit){ t.flash-=0.08; if(t.flash<=0) tiles.splice(i,1); continue; }
     t.y+=speed;
-    // Miss: passed HIT_Y without hit
-    if(!t.hit && t.y>HIT_Y+60){
-      t.missed=true;
-      onMiss(t.col);
-    }
+    if(!t.hit && t.y>HIT_Y+60){ t.missed=true; onMiss(t.col); }
   }
 
-  // Judge FX
   if(judgeFx){ judgeFx.a-=0.025; judgeFx.y-=0.7; if(judgeFx.a<=0) judgeFx=null; }
   flashes=flashes.filter(f=>{ f.a-=0.06; return f.a>0; });
 }
 
 // ── Input ─────────────────────────────────────────────────────────────────
 function tryPress(col){
-  if(st!=='playing') return;
-  // Find lowest hittable tile
+  if(st!=='playing'||quizActive) return;
   let best=null, bestDist=Infinity;
   for(const t of tiles){
     if(t.col!==col||t.hit||t.missed) continue;
@@ -313,67 +391,34 @@ function tryPress(col){
     }
   }
   if(!best){ onWrong(col); return; }
-
+  best.hit=true; best.flash=1;
+  flashes.push({col,a:1});
   const diff=Math.abs((best.y+best.h)-HIT_Y);
-  if(best.long){
-    best.hit=true; best.holding=true;
-    holdingTile[col]=best;
-    startHold(COL_FREQS[col]);
-    flashes.push({col,a:1});
-    judgeHit(diff,col,false);
-    ding(COL_FREQS[col],0.2);
-  } else {
-    best.hit=true; best.flash=1;
-    flashes.push({col,a:1});
-    judgeHit(diff,col,true);
-    ding(COL_FREQS[col]);
-  }
+  judgeHit(diff,col);
+  ding(COL_FREQS[col]);
 }
 
-function tryRelease(col){
-  if(st!=='playing') return;
-  const t=holdingTile[col];
-  if(!t||!t.holding) return;
-  const prog=t.holdProgress;
-  holdingTile[col]=null; stopHold();
-  if(prog<0.45){ t.holding=false; t.hit=false; t.missed=true; onMiss(col); }
-  else { t.holding=false; t.hit=false; t.missed=true; addScore('great',col); }
-}
-
-function judgeHit(diff,col,scoreIt){
-  let label,type;
-  if(diff<18){label='PERFECT';type='perfect';}
-  else if(diff<38){label='GREAT';type='great';}
-  else{label='GOOD';type='good';}
-  if(scoreIt) addScore(type,col);
-  judgeFx={text:label,color:{perfect:'#ffd700',great:'#5cf0ff',good:'#a78bfa'}[type],y:HIT_Y-24,a:1};
-}
-
-function addScore(type,col){
-  const pts={perfect:100,great:70,good:40}[type]||0;
+function judgeHit(diff,col){
+  let label,type,pts;
+  if(diff<18){label='PERFECT';type='perfect';pts=100;}
+  else if(diff<38){label='GREAT';type='great';pts=70;}
+  else{label='GOOD';type='good';pts=40;}
   combo++;
   score+=pts+Math.floor(combo/5)*10;
-  if(type==='perfect') perfCnt++;
-  else if(type==='great') greatCnt++;
-  else goodCnt++;
+  judgeFx={text:label,color:{perfect:'#ffd700',great:'#5cf0ff',good:'#a78bfa'}[type],y:HIT_Y-24,a:1};
   updateHUD();
 }
 
 function onMiss(col){
-  missCnt++; combo=0; lives--;
-  holdingTile[col]=null; stopHold();
+  combo=0; lives--;
   judgeFx={text:'MISS',color:'#ff4466',y:HIT_Y-24,a:1};
-  miss();
-  updateHUD();
+  missSound(); updateHUD();
   if(lives<=0) gameOver();
 }
-
 function onWrong(col){
   combo=0; lives--;
   judgeFx={text:'WRONG',color:'#ff4466',y:HIT_Y-24,a:1};
-  miss();
-  flashes.push({col,a:0.6});
-  updateHUD();
+  missSound(); flashes.push({col,a:0.6}); updateHUD();
   if(lives<=0) gameOver();
 }
 
@@ -381,90 +426,51 @@ function updateHUD(){
   document.getElementById('scoreDisplay').textContent=score;
   const cd=document.getElementById('comboDisplay');
   if(combo>=5){ cd.textContent=combo+'x'; cd.style.opacity='1'; }
-  else { cd.style.opacity='0'; }
-  const h=['❤','❤','❤'].map((_,i)=>i<lives?'❤':'♡').join('');
-  document.getElementById('livesDisplay').textContent=h;
+  else cd.style.opacity='0';
+  document.getElementById('livesDisplay').textContent=
+    [0,1,2].map(i=>i<lives?'❤':'♡').join('');
 }
 
 // ── Draw ──────────────────────────────────────────────────────────────────
 function draw(){
-  ctx.fillStyle='#f5f5f5';
-  ctx.fillRect(0,0,W,H);
-
-  // Column dividers
+  ctx.fillStyle='#f5f5f5'; ctx.fillRect(0,0,W,H);
   ctx.strokeStyle='rgba(0,0,0,0.07)'; ctx.lineWidth=1;
   for(let c=1;c<COLS;c++){
     ctx.beginPath(); ctx.moveTo(c*COL_W,0); ctx.lineTo(c*COL_W,H); ctx.stroke();
   }
-
-  // Column flash
   for(const f of flashes){
     ctx.fillStyle=`rgba(167,139,250,${f.a*0.25})`;
     ctx.fillRect(f.col*COL_W,0,COL_W,H);
   }
-
-  // Tiles
-  const now=performance.now()/500;
   for(const t of tiles){
     if(t.missed) continue;
     const x=t.col*COL_W+3, w=COL_W-6, r=6;
-    let y=t.y, h=t.h;
-
     ctx.save();
-    if(t.hit&&!t.long) ctx.globalAlpha=Math.max(0,t.flash);
-
-    if(t.long){
-      // Long tile body
-      if(t.holding){ y=HIT_Y; h=Math.max(8,t.h*(1-t.holdProgress)); }
-      ctx.fillStyle='#1a1a2e';
-      rr(x,y,w,h,r); ctx.fill();
-      // Glow border
-      const pulse=t.holding?0.8+0.2*Math.sin(now*4):0.5;
-      ctx.strokeStyle=t.holding?`rgba(167,139,250,${pulse})`:`rgba(167,139,250,0.5)`;
-      ctx.lineWidth=t.holding?4:2;
-      ctx.shadowColor='rgba(167,139,250,0.7)'; ctx.shadowBlur=t.holding?14:6;
-      rr(x,y,w,h,r); ctx.stroke();
-      ctx.shadowBlur=0;
-      if(h>50){
-        ctx.fillStyle=`rgba(255,255,255,${t.holding?0.9:0.45})`;
-        ctx.font='bold 12px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
-        ctx.fillText('HOLD',x+w/2,y+h/2);
-      }
-    } else {
-      // Short tile
-      ctx.fillStyle='#1a1a2e';
-      rr(x,y,w,h,r); ctx.fill();
-      // Top shine
-      const sg=ctx.createLinearGradient(x,y,x,y+18);
-      sg.addColorStop(0,'rgba(255,255,255,0.22)'); sg.addColorStop(1,'rgba(255,255,255,0)');
-      ctx.fillStyle=sg; rr(x,y,w,18,r); ctx.fill();
-      if(t.hit){
-        ctx.fillStyle=`rgba(167,139,250,${t.flash*0.6})`;
-        rr(x,y,w,h,r); ctx.fill();
-      }
+    if(t.hit) ctx.globalAlpha=Math.max(0,t.flash);
+    ctx.fillStyle='#1a1a2e'; rr(x,t.y,w,t.h,r); ctx.fill();
+    const sg=ctx.createLinearGradient(x,t.y,x,t.y+18);
+    sg.addColorStop(0,'rgba(255,255,255,0.22)'); sg.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle=sg; rr(x,t.y,w,18,r); ctx.fill();
+    if(t.hit){
+      ctx.fillStyle=`rgba(167,139,250,${t.flash*0.6})`; rr(x,t.y,w,t.h,r); ctx.fill();
     }
     ctx.restore();
   }
-
   // Hit line
   ctx.save();
   ctx.strokeStyle='rgba(167,139,250,0.9)'; ctx.lineWidth=3;
   ctx.shadowColor='rgba(167,139,250,0.7)'; ctx.shadowBlur=10;
   ctx.beginPath(); ctx.moveTo(0,HIT_Y); ctx.lineTo(W,HIT_Y); ctx.stroke();
   ctx.shadowBlur=0;
-  // Column markers
   for(let c=0;c<COLS;c++){
     ctx.fillStyle='rgba(167,139,250,0.08)';
     ctx.fillRect(c*COL_W+3,HIT_Y-8,COL_W-6,16);
   }
   ctx.restore();
-
-  // Judge text
   if(judgeFx&&judgeFx.a>0){
-    ctx.save();
-    ctx.globalAlpha=Math.min(1,judgeFx.a*2);
+    ctx.save(); ctx.globalAlpha=Math.min(1,judgeFx.a*2);
     ctx.font='bold 22px Arial'; ctx.textAlign='center';
-    ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.fillText(judgeFx.text,W/2+1,judgeFx.y+1);
+    ctx.fillStyle='rgba(0,0,0,0.3)'; ctx.fillText(judgeFx.text,W/2+1,judgeFx.y+1);
     ctx.fillStyle=judgeFx.color; ctx.fillText(judgeFx.text,W/2,judgeFx.y);
     ctx.restore();
   }
@@ -479,28 +485,117 @@ function rr(x,y,w,h,r){
   ctx.closePath();
 }
 
+// ── Quiz ──────────────────────────────────────────────────────────────────
+let quizTimerInterval=null;
+
+function triggerQuiz(){
+  quizActive=true; quizAnswered=false;
+  nextQuizAt=playTimeSec+QUIZ_INTERVAL;
+  document.getElementById('progressFill').style.width='0%';
+
+  const q=getQuiz();
+  document.getElementById('quizBadge').textContent=`⏸ ${q.cat} 퀴즈!`;
+  document.getElementById('quizQ').textContent=q.q;
+  document.getElementById('quizResult').textContent='';
+
+  const optsEl=document.getElementById('quizOptions');
+  optsEl.innerHTML='';
+  q.opts.forEach(opt=>{
+    const btn=document.createElement('button');
+    btn.className='quiz-opt'; btn.textContent=opt;
+    btn.addEventListener('click',()=>answerQuiz(opt,q.a,btn,optsEl));
+    btn.addEventListener('touchend',e=>{ e.preventDefault(); answerQuiz(opt,q.a,btn,optsEl); });
+    optsEl.appendChild(btn);
+  });
+
+  quizTimeLeft=15;
+  document.getElementById('quizTimer').textContent=`⏱ ${quizTimeLeft}초`;
+  document.getElementById('quizOverlay').classList.add('show');
+
+  if(quizTimerInterval) clearInterval(quizTimerInterval);
+  quizTimerInterval=setInterval(()=>{
+    quizTimeLeft--;
+    document.getElementById('quizTimer').textContent=`⏱ ${quizTimeLeft}초`;
+    if(quizTimeLeft<=0){
+      clearInterval(quizTimerInterval);
+      if(!quizAnswered) timeoutQuiz(q.a, optsEl);
+    }
+  },1000);
+}
+
+function answerQuiz(chosen, correct, btn, optsEl){
+  if(quizAnswered) return;
+  quizAnswered=true;
+  clearInterval(quizTimerInterval);
+  document.getElementById('quizTimer').textContent='';
+
+  // Disable all buttons
+  optsEl.querySelectorAll('.quiz-opt').forEach(b=>{
+    b.style.pointerEvents='none';
+    if(b.textContent===correct) b.classList.add('correct');
+  });
+
+  if(chosen===correct){
+    btn.classList.add('correct');
+    score+=200; combo+=5; updateHUD();
+    document.getElementById('quizResult').textContent='🎉 정답! +200점';
+    document.getElementById('quizResult').style.color='#34d399';
+    correctSound();
+  } else {
+    btn.classList.add('wrong');
+    lives--; if(lives<0) lives=0; updateHUD();
+    document.getElementById('quizResult').textContent=`❌ 오답! 정답: ${correct}  -1 목숨`;
+    document.getElementById('quizResult').style.color='#f87171';
+    wrongSound();
+  }
+  setTimeout(closeQuiz, 2000);
+}
+
+function timeoutQuiz(correct, optsEl){
+  if(quizAnswered) return;
+  quizAnswered=true;
+  optsEl.querySelectorAll('.quiz-opt').forEach(b=>{
+    b.style.pointerEvents='none';
+    if(b.textContent===correct) b.classList.add('correct');
+  });
+  lives--; if(lives<0) lives=0; updateHUD();
+  document.getElementById('quizResult').textContent=`⏰ 시간 초과! 정답: ${correct}`;
+  document.getElementById('quizResult').style.color='#f87171';
+  wrongSound();
+  setTimeout(closeQuiz, 2000);
+}
+
+function closeQuiz(){
+  document.getElementById('quizOverlay').classList.remove('show');
+  quizActive=false;
+  lastFrameTime=null; // reset dt so no jump
+  if(lives<=0){ gameOver(); return; }
+}
+
 // ── Game Flow ─────────────────────────────────────────────────────────────
 function startGame(){
   st='playing';
   tiles=[]; score=0; combo=0; lives=3;
-  perfCnt=greatCnt=goodCnt=missCnt=0;
   frameCount=0; spawnTimer=0; speed=SCROLL_SPD; spawnInterval=90;
-  longRatio=0.2; lastSpawnCol=-1;
-  holdingTile=[null,null,null,null];
-  judgeFx=null; flashes=[];
+  lastSpawnCol=-1; judgeFx=null; flashes=[];
+  playTimeSec=0; nextQuizAt=QUIZ_INTERVAL;
+  quizActive=false; lastFrameTime=null;
   document.getElementById('startScreen').style.display='none';
   document.getElementById('gameOverScreen').style.display='none';
+  document.getElementById('quizOverlay').classList.remove('show');
+  document.getElementById('progressFill').style.width='0%';
   updateHUD();
   playMusic();
-  spawnTile(); // first tile immediately
+  spawnTile();
   if(raf) cancelAnimationFrame(raf);
-  function loop(){ if(st!=='playing') return; update(); draw(); raf=requestAnimationFrame(loop); }
+  function loop(ts){ if(st!=='playing') return; update(ts); draw(); raf=requestAnimationFrame(loop); }
   raf=requestAnimationFrame(loop);
 }
 
 function gameOver(){
   st='over';
-  stopMusic(); stopHold();
+  stopMusic();
+  if(quizTimerInterval) clearInterval(quizTimerInterval);
   if(raf){ cancelAnimationFrame(raf); raf=null; }
   if(score>best) best=score;
   document.getElementById('finalScore').textContent=score;
@@ -515,11 +610,7 @@ canvas.addEventListener('mousedown',e=>{
   const col=Math.floor((e.clientX-r.left)/(r.width/4));
   if(col>=0&&col<4) tryPress(col);
 });
-window.addEventListener('mouseup',e=>{
-  const r=canvas.getBoundingClientRect();
-  const col=Math.floor((e.clientX-r.left)/(r.width/4));
-  if(col>=0&&col<4) tryRelease(col);
-});
+window.addEventListener('mouseup',()=>{});
 canvas.addEventListener('touchstart',e=>{
   e.preventDefault(); getAC();
   const r=canvas.getBoundingClientRect();
@@ -528,49 +619,46 @@ canvas.addEventListener('touchstart',e=>{
     if(col>=0&&col<4) tryPress(col);
   }
 },{passive:false});
-canvas.addEventListener('touchend',e=>{
-  e.preventDefault();
-  const r=canvas.getBoundingClientRect();
-  for(const t of e.changedTouches){
-    const col=Math.floor((t.clientX-r.left)/(r.width/4));
-    if(col>=0&&col<4) tryRelease(col);
-  }
-},{passive:false});
-canvas.addEventListener('touchcancel',e=>{
-  for(const t of e.changedTouches){
-    const r=canvas.getBoundingClientRect();
-    const col=Math.floor((t.clientX-r.left)/(r.width/4));
-    if(col>=0&&col<4) tryRelease(col);
-  }
-},{passive:false});
+canvas.addEventListener('touchend',e=>{ e.preventDefault(); },{passive:false});
 document.addEventListener('keydown',e=>{
   if(e.repeat) return; getAC();
   const c={a:0,s:1,d:2,f:3}[e.key.toLowerCase()];
   if(c!==undefined) tryPress(c);
 });
-document.addEventListener('keyup',e=>{
-  const c={a:0,s:1,d:2,f:3}[e.key.toLowerCase()];
-  if(c!==undefined) tryRelease(c);
-});
 document.getElementById('startBtn').addEventListener('click',()=>{ getAC(); startGame(); });
 document.getElementById('restartBtn').addEventListener('click',()=>{ getAC(); startGame(); });
 document.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
 
-// Mobile scaling
-(function(){
-  const maxW=Math.min(window.innerWidth,360);
-  if(maxW<360){
-    const s=maxW/360;
-    canvas.style.width=maxW+'px';
-    canvas.style.height=(520*s)+'px';
-    ['#hud','#progressBar'].forEach(id=>{
-      const el=document.querySelector(id);
-      if(el) el.style.width=maxW+'px';
-    });
+// Responsive scaling — fits any screen size (phone or tablet)
+(function scaleGame(){
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const CANVAS_W = 360, CANVAS_H = 520;
+  const HUD_H = 34 + 4 + 16; // hud + progressBar + gap
+
+  // Max scale that fits both width and height
+  const scaleByW = vw / CANVAS_W;
+  const scaleByH = (vh - HUD_H - 60) / CANVAS_H; // 60px for h1 + gaps
+  const scale = Math.min(scaleByW, scaleByH, 2.5); // cap at 2.5x
+
+  const scaledW = Math.floor(CANVAS_W * scale);
+  const scaledH = Math.floor(CANVAS_H * scale);
+
+  canvas.style.width  = scaledW + 'px';
+  canvas.style.height = scaledH + 'px';
+
+  ['#hud','#progressBar'].forEach(id => {
+    const el = document.querySelector(id);
+    if(el) el.style.width = scaledW + 'px';
+  });
+
+  // Also scale quiz overlay font for larger screens
+  if(scale > 1.2){
+    document.getElementById('quizQ').style.fontSize = (1.5 * scale * 0.8) + 'rem';
+    document.querySelectorAll('.quiz-opt').forEach(b => b.style.fontSize = (1 * scale * 0.8) + 'rem');
   }
 })();
 
-// Initial draw
 ctx.fillStyle='#f5f5f5'; ctx.fillRect(0,0,W,H);
 </script>
 </body>
