@@ -43,17 +43,33 @@ h1 {
 #progressBar { width:360px; height:4px; background:rgba(255,255,255,0.12); border-radius:2px; overflow:hidden; }
 #progressFill { height:100%; width:0%; border-radius:2px; background:linear-gradient(90deg,#a78bfa,#5cf0ff); transition:width .1s linear; }
 canvas { display:block; border-radius:8px; box-shadow:0 0 40px rgba(0,0,0,0.6); touch-action:none; -webkit-touch-callout:none; }
-.screen { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; border-radius:8px; }
-#startScreen  { background:rgba(26,26,46,0.95); }
+.screen { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; border-radius:8px; padding:20px; }
+#startScreen  { background:rgba(26,26,46,0.97); }
 #gameOverScreen { background:rgba(26,26,46,0.95); display:none; }
-.screen h2 { font-size:2rem; font-weight:900; }
-.screen p  { font-size:.95rem; opacity:.55; }
-.score-big { font-size:5rem; font-weight:900; line-height:1; }
+.screen h2 { font-size:1.8rem; font-weight:900; }
+.screen p  { font-size:.9rem; opacity:.55; }
+.score-big { font-size:4.5rem; font-weight:900; line-height:1; }
 .best-txt  { font-size:1rem; color:#a78bfa; }
 .btn { background:#fff; color:#1a1a2e; border:none; border-radius:30px; padding:13px 40px; font-size:1rem; font-weight:700; cursor:pointer; transition:transform .12s; }
 .btn:active { transform:scale(0.96); }
 #comboDisplay { font-size:1.4rem; font-weight:900; opacity:0; transition:opacity .2s; color:#f472b6; text-align:center; height:1.8rem; }
 #canvasWrap { position:relative; }
+
+/* ── 선택 버튼 그룹 ── */
+.select-group { display:flex; flex-direction:column; align-items:center; gap:6px; width:100%; }
+.select-label { font-size:.75rem; font-weight:700; letter-spacing:2px; opacity:.5; text-transform:uppercase; }
+.select-btns { display:flex; gap:6px; }
+.sel-btn {
+  padding:8px 14px; border-radius:20px; border:2px solid rgba(255,255,255,0.2);
+  background:rgba(255,255,255,0.07); color:rgba(255,255,255,0.7);
+  font-size:.85rem; font-weight:700; cursor:pointer;
+  transition:all .15s;
+}
+.sel-btn:active { transform:scale(0.95); }
+.sel-btn.active { border-color:#a78bfa; background:rgba(167,139,250,0.25); color:#fff; }
+.sel-btn.active-green { border-color:#34d399; background:rgba(52,211,153,0.2); color:#fff; }
+.sel-btn.active-yellow { border-color:#fbbf24; background:rgba(251,191,36,0.2); color:#fff; }
+.sel-btn.active-red { border-color:#f87171; background:rgba(248,113,113,0.2); color:#fff; }
 
 /* ── Quiz overlay ── */
 #quizOverlay {
@@ -109,9 +125,29 @@ canvas { display:block; border-radius:8px; box-shadow:0 0 40px rgba(0,0,0,0.6); 
     <div class="screen" id="startScreen">
       <h2>🎵 Magic Tiles</h2>
       <p>판정선에 타일이 오면 탭하세요</p>
-      <p style="font-size:.78rem;opacity:.3;">10분마다 깜짝 퀴즈 등장!</p>
+
+      <!-- 난이도 선택 -->
+      <div class="select-group">
+        <div class="select-label">⚡ 난이도</div>
+        <div class="select-btns" id="diffBtns">
+          <button class="sel-btn active-green" data-diff="easy">🌱 초급</button>
+          <button class="sel-btn" data-diff="normal">⭐ 중급</button>
+          <button class="sel-btn" data-diff="hard">🔥 고급</button>
+        </div>
+      </div>
+
+      <!-- 음악 선택 -->
+      <div class="select-group">
+        <div class="select-label">🎵 음악</div>
+        <div class="select-btns" id="musicBtns">
+          <button class="sel-btn active" data-music="beat">신나는 비트</button>
+          <button class="sel-btn" data-music="kids">귀여운 동요</button>
+          <button class="sel-btn" data-music="classic">클래식</button>
+        </div>
+      </div>
+
       <button class="btn" id="startBtn">TAP TO PLAY</button>
-      <p style="font-size:.75rem;opacity:.25;">키보드: A S D F</p>
+      <p style="font-size:.72rem;opacity:.25;">키보드: A S D F &nbsp;|&nbsp; 10분마다 깜짝 퀴즈!</p>
     </div>
 
     <!-- Game Over -->
@@ -136,18 +172,62 @@ canvas { display:block; border-radius:8px; box-shadow:0 0 40px rgba(0,0,0,0.6); 
 <script>
 // ── Constants ─────────────────────────────────────────────────────────────
 const W=360, H=520, COLS=4, COL_W=W/COLS;
-const SCROLL_SPD=3.0;
 const HIT_Y=H-140;
 const TILE_H=64;
-const QUIZ_INTERVAL=10*60; // 10 minutes in seconds (change to e.g. 60 for 1 min testing)
+const QUIZ_INTERVAL=10*60;
+
+// ── 난이도 설정 ────────────────────────────────────────────────────────────
+const DIFFICULTY_PRESETS = {
+  easy:   { baseSpeed:1.8, speedInc:0.08, spawnBase:110, spawnDec:2,  spawnMin:75 },
+  normal: { baseSpeed:2.5, speedInc:0.18, spawnBase:90,  spawnDec:4,  spawnMin:50 },
+  hard:   { baseSpeed:3.2, speedInc:0.35, spawnBase:72,  spawnDec:6,  spawnMin:38 },
+};
+let selectedDiff = 'easy';
+
+// ── 음악 테마 설정 ─────────────────────────────────────────────────────────
+const PENTA_MID  = [261.63,293.66,329.63,392,440,523.25,587.33,659.25];
+const PENTA_HIGH = [392,440,523.25,587.33,659.25,783.99,880,1046.5];
+const MAJOR_SCALE= [261.63,293.66,329.63,349.23,392,440,493.88,523.25,587.33,659.25];
+
+const MUSIC_THEMES = {
+  beat: {
+    bpm: 128, bars: 8,
+    kick: true, snare: true, hihat: true,
+    kickVol: 0.42, snareVol: 0.2, hihatVol: 0.09,
+    melChance: 0.45, melVol: 0.1, melWave: 'sine', notes: PENTA_MID,
+  },
+  kids: {
+    bpm: 88, bars: 8,
+    kick: true, snare: false, hihat: false,
+    kickVol: 0.2, snareVol: 0, hihatVol: 0,
+    melChance: 0.75, melVol: 0.14, melWave: 'triangle', notes: PENTA_HIGH,
+  },
+  classic: {
+    bpm: 100, bars: 8,
+    kick: false, snare: false, hihat: false,
+    kickVol: 0, snareVol: 0, hihatVol: 0,
+    melChance: 0.85, melVol: 0.13, melWave: 'triangle', notes: MAJOR_SCALE,
+  },
+};
+let selectedMusic = 'beat';
 
 // ── Audio ─────────────────────────────────────────────────────────────────
-let ac=null;
+let ac = null;
 function getAC(){
-  if(!ac) ac=new(window.AudioContext||window.webkitAudioContext)();
+  if(!ac) ac = new(window.AudioContext||window.webkitAudioContext)();
   if(ac.state==='suspended') ac.resume();
   return ac;
 }
+
+// 탭/클릭 시 AudioContext 재개 (모바일 자동재생 정책 대응)
+document.addEventListener('touchstart', ()=>{ if(ac&&ac.state==='suspended') ac.resume(); }, {passive:true});
+document.addEventListener('click', ()=>{ if(ac&&ac.state==='suspended') ac.resume(); }, {passive:true});
+
+// 화면이 다시 보일 때 음악 재개
+document.addEventListener('visibilitychange', ()=>{
+  if(!document.hidden && ac && ac.state==='suspended') ac.resume();
+});
+
 function ding(freq,vol=0.35){
   const a=getAC(),o=a.createOscillator(),g=a.createGain();
   o.connect(g); g.connect(a.destination);
@@ -190,68 +270,81 @@ function wrongSound(){
   });
 }
 
-// Background music — seamless looping beat + pentatonic melody
+// ── 배경음악 ───────────────────────────────────────────────────────────────
 let musicNodes=[], musicPlaying=false;
-const BPM=128, BEAT=60/BPM;
-const PENTA=[261.63,293.66,329.63,392,440,523.25,587.33,659.25];
+let currentThemeKey='beat';
 
 function scheduleLoop(startT){
   if(!musicPlaying) return;
   const a=getAC();
-  const BARS=8, BAR=BEAT*4, TOTAL=BARS*BAR;
+  const theme=MUSIC_THEMES[currentThemeKey];
+  const BEAT=60/theme.bpm;
+  const BARS=theme.bars, BAR=BEAT*4, TOTAL=BARS*BAR;
 
   for(let b=0;b<BARS*4;b++){
     const t=startT+b*BEAT;
-    // Kick
-    if(b%4===0||b%4===2){
+
+    // 킥 드럼
+    if(theme.kick && (b%4===0||b%4===2)){
       const o=a.createOscillator(),g=a.createGain();
       o.connect(g); g.connect(a.destination);
       o.frequency.setValueAtTime(150,t); o.frequency.exponentialRampToValueAtTime(40,t+.15);
-      g.gain.setValueAtTime(.45,t); g.gain.exponentialRampToValueAtTime(.001,t+.2);
+      g.gain.setValueAtTime(theme.kickVol,t); g.gain.exponentialRampToValueAtTime(.001,t+.2);
       o.start(t); o.stop(t+.2); musicNodes.push(o);
     }
-    // Snare
-    if(b%4===1||b%4===3){
+    // 스네어
+    if(theme.snare && (b%4===1||b%4===3)){
       const buf=a.createBuffer(1,a.sampleRate*.08,a.sampleRate);
       const d=buf.getChannelData(0);
       for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.exp(-i/(a.sampleRate*.03));
       const s=a.createBufferSource(),g=a.createGain();
       s.buffer=buf; s.connect(g); g.connect(a.destination);
-      g.gain.setValueAtTime(.22,t); g.gain.exponentialRampToValueAtTime(.001,t+.08);
+      g.gain.setValueAtTime(theme.snareVol,t); g.gain.exponentialRampToValueAtTime(.001,t+.08);
       s.start(t); musicNodes.push(s);
     }
-    // Hi-hat
-    for(const off of [0, BEAT/2]){
-      const t2=t+off;
-      const buf=a.createBuffer(1,a.sampleRate*.025,a.sampleRate);
-      const d=buf.getChannelData(0);
-      for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.exp(-i/(a.sampleRate*.007));
-      const s=a.createBufferSource(),g=a.createGain();
-      s.buffer=buf; s.connect(g); g.connect(a.destination);
-      g.gain.setValueAtTime(off===0?.1:.07,t2); g.gain.exponentialRampToValueAtTime(.001,t2+.025);
-      s.start(t2); musicNodes.push(s);
+    // 하이햇
+    if(theme.hihat){
+      for(const off of [0, BEAT/2]){
+        const t2=t+off;
+        const buf=a.createBuffer(1,a.sampleRate*.025,a.sampleRate);
+        const d=buf.getChannelData(0);
+        for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.exp(-i/(a.sampleRate*.007));
+        const s=a.createBufferSource(),g=a.createGain();
+        s.buffer=buf; s.connect(g); g.connect(a.destination);
+        g.gain.setValueAtTime(off===0?theme.hihatVol:theme.hihatVol*0.7,t2);
+        g.gain.exponentialRampToValueAtTime(.001,t2+.025);
+        s.start(t2); musicNodes.push(s);
+      }
     }
   }
-  // Melody
+
+  // 멜로디
+  const notes=theme.notes;
   for(let i=0;i<BARS*4;i++){
     const t=startT+i*BEAT;
-    if(Math.random()<0.5){
-      const freq=PENTA[Math.floor(Math.random()*PENTA.length)];
+    if(Math.random()<theme.melChance){
+      const freq=notes[Math.floor(Math.random()*notes.length)];
       const dur=BEAT*(Math.random()<0.25?2:1)*0.82;
       const o=a.createOscillator(),g=a.createGain();
       o.connect(g); g.connect(a.destination);
-      o.type='sine'; o.frequency.value=freq;
-      g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.1,t+.02);
-      g.gain.setValueAtTime(.1,t+dur-.04); g.gain.linearRampToValueAtTime(.001,t+dur);
+      o.type=theme.melWave; o.frequency.value=freq;
+      g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(theme.melVol,t+.03);
+      g.gain.setValueAtTime(theme.melVol,t+dur-.05); g.gain.linearRampToValueAtTime(.001,t+dur);
       o.start(t); o.stop(t+dur+.01); musicNodes.push(o);
     }
   }
-  // Schedule next loop slightly before this one ends
+
+  // 루프 끝나기 0.5초 전에 다음 루프 예약 (끊김 방지)
   const nextStart=startT+TOTAL;
-  const delay=(nextStart-a.currentTime-0.3)*1000;
-  setTimeout(()=>{ if(musicPlaying) scheduleLoop(nextStart); }, Math.max(100,delay));
+  const delay=(nextStart-a.currentTime-0.5)*1000;
+  setTimeout(()=>{ if(musicPlaying) scheduleLoop(nextStart); }, Math.max(50,delay));
 }
-function playMusic(){ musicPlaying=true; scheduleLoop(getAC().currentTime+0.05); }
+
+function playMusic(){
+  musicPlaying=true;
+  currentThemeKey=selectedMusic;
+  scheduleLoop(getAC().currentTime+0.1);
+}
 function stopMusic(){
   musicPlaying=false;
   musicNodes.forEach(n=>{ try{n.stop();}catch(e){} });
@@ -282,7 +375,6 @@ function makeQuizPool(){
     const others=words.filter(w=>w[0]!==en).map(w=>w[1]);
     const wrongs=shuffle(others).slice(0,3);
     pool.push({ cat:'영어', q:`"${en}" 의 뜻은?`, a:ko, opts:shuffle([ko,...wrongs]) });
-    // reverse
     const othersEn=words.filter(w=>w[1]!==ko).map(w=>w[0]);
     const wrongsEn=shuffle(othersEn).slice(0,3);
     pool.push({ cat:'영어', q:`"${ko}" 를 영어로?`, a:en, opts:shuffle([en,...wrongsEn]) });
@@ -297,7 +389,6 @@ function makeQuizPool(){
     {q:'지구에서 가장 큰 대륙은?',a:'아시아',opts:['아시아','아프리카','유럽','북아메리카']},
     {q:'피타고라스 정리: a²+b²=?',a:'c²',opts:['c²','c','2c','c³']},
     {q:'빛의 속도는 약?',a:'30만 km/s',opts:['30만 km/s','3만 km/s','300만 km/s','3000 km/s']},
-    {q:'가장 많이 사용되는 프로그래밍 언어(2024)?',a:'Python',opts:['Python','Java','C++','JavaScript']},
     {q:'지구의 표면 중 바다 비율은?',a:'약 71%',opts:['약 71%','약 51%','약 61%','약 81%']},
     {q:'한국의 국화는?',a:'무궁화',opts:['무궁화','장미','벚꽃','국화']},
     {q:'삼각형 내각의 합은?',a:'180°',opts:['180°','360°','90°','270°']},
@@ -309,6 +400,7 @@ function makeQuizPool(){
     {q:'지구 자전 주기는?',a:'약 24시간',opts:['약 24시간','약 12시간','약 48시간','약 365일']},
     {q:'한글을 만든 왕은?',a:'세종대왕',opts:['세종대왕','태조','광해군','정조']},
     {q:'오대양 중 가장 큰 바다는?',a:'태평양',opts:['태평양','대서양','인도양','북극해']},
+    {q:'가장 많이 사용되는 프로그래밍 언어(2024)?',a:'Python',opts:['Python','Java','C++','JavaScript']},
   ];
   trivia.forEach(t=>pool.push({cat:'상식',...t}));
   return pool;
@@ -331,12 +423,12 @@ const canvas=document.getElementById('gameCanvas');
 const ctx=canvas.getContext('2d');
 let st='start';
 let tiles=[], score=0, combo=0, lives=3, best=0;
-let speed=SCROLL_SPD, spawnTimer=0, spawnInterval=90;
+let speed=1.8, spawnTimer=0, spawnInterval=110;
 let lastSpawnCol=-1;
 let raf=null, frameCount=0;
 let judgeFx=null, flashes=[];
-let playTimeSec=0; // total play seconds
-let nextQuizAt=QUIZ_INTERVAL; // seconds until next quiz
+let playTimeSec=0;
+let nextQuizAt=QUIZ_INTERVAL;
 let quizActive=false, quizAnswered=false, quizTimeLeft=0;
 const COL_FREQS=[261,330,392,523];
 
@@ -359,24 +451,21 @@ function update(ts){
   playTimeSec+=dt;
   frameCount++;
 
-  // Quiz trigger
   if(playTimeSec>=nextQuizAt){ triggerQuiz(); return; }
 
-  // Spawn
   spawnTimer++;
   if(spawnTimer>=spawnInterval){ spawnTile(); spawnTimer=0; }
 
-  // Level
+  // 난이도에 따른 속도 계산
+  const diff=DIFFICULTY_PRESETS[selectedDiff];
   const lvl=Math.floor(score/10);
-  speed=SCROLL_SPD+lvl*0.3;
-  spawnInterval=Math.max(40,90-lvl*5);
+  speed=diff.baseSpeed+lvl*diff.speedInc;
+  spawnInterval=Math.max(diff.spawnMin, diff.spawnBase-lvl*diff.spawnDec);
 
-  // Progress bar = time until next quiz
   const remain=nextQuizAt-playTimeSec;
   const pct=100-Math.min(100,(remain/QUIZ_INTERVAL)*100);
   document.getElementById('progressFill').style.width=pct+'%';
 
-  // Move tiles
   for(let i=tiles.length-1;i>=0;i--){
     const t=tiles[i];
     if(t.missed){ tiles.splice(i,1); continue; }
@@ -392,19 +481,19 @@ function update(ts){
 // ── Input ─────────────────────────────────────────────────────────────────
 function tryPress(col){
   if(st!=='playing'||quizActive) return;
-  let best=null, bestDist=Infinity;
+  let bestTile=null, bestDist=Infinity;
   for(const t of tiles){
     if(t.col!==col||t.hit||t.missed) continue;
     const bottom=t.y+t.h;
     if(bottom>=HIT_Y-50 && t.y<=HIT_Y+50){
       const dist=Math.abs(bottom-HIT_Y);
-      if(dist<bestDist){bestDist=dist; best=t;}
+      if(dist<bestDist){bestDist=dist; bestTile=t;}
     }
   }
-  if(!best){ onWrong(col); return; }
-  best.hit=true; best.flash=1;
+  if(!bestTile){ onWrong(col); return; }
+  bestTile.hit=true; bestTile.flash=1;
   flashes.push({col,a:1});
-  const diff=Math.abs((best.y+best.h)-HIT_Y);
+  const diff=Math.abs((bestTile.y+bestTile.h)-HIT_Y);
   judgeHit(diff,col);
   ding(COL_FREQS[col]);
 }
@@ -467,7 +556,6 @@ function draw(){
     }
     ctx.restore();
   }
-  // Hit line
   ctx.save();
   ctx.strokeStyle='rgba(167,139,250,0.9)'; ctx.lineWidth=3;
   ctx.shadowColor='rgba(167,139,250,0.7)'; ctx.shadowBlur=10;
@@ -539,13 +627,10 @@ function answerQuiz(chosen, correct, btn, optsEl){
   quizAnswered=true;
   clearInterval(quizTimerInterval);
   document.getElementById('quizTimer').textContent='';
-
-  // Disable all buttons
   optsEl.querySelectorAll('.quiz-opt').forEach(b=>{
     b.style.pointerEvents='none';
     if(b.textContent===correct) b.classList.add('correct');
   });
-
   if(chosen===correct){
     btn.classList.add('correct');
     score+=200; combo+=5; updateHUD();
@@ -579,7 +664,7 @@ function timeoutQuiz(correct, optsEl){
 function closeQuiz(){
   document.getElementById('quizOverlay').classList.remove('show');
   quizActive=false;
-  lastFrameTime=null; // reset dt so no jump
+  lastFrameTime=null;
   if(lives<=0){ gameOver(); return; }
 }
 
@@ -587,7 +672,9 @@ function closeQuiz(){
 function startGame(){
   st='playing';
   tiles=[]; score=0; combo=0; lives=3;
-  frameCount=0; spawnTimer=0; speed=SCROLL_SPD; spawnInterval=90;
+  frameCount=0; spawnTimer=0;
+  const dp=DIFFICULTY_PRESETS[selectedDiff];
+  speed=dp.baseSpeed; spawnInterval=dp.spawnBase;
   lastSpawnCol=-1; judgeFx=null; flashes=[];
   playTimeSec=0; nextQuizAt=QUIZ_INTERVAL;
   quizActive=false; lastFrameTime=null;
@@ -614,6 +701,29 @@ function gameOver(){
   document.getElementById('gameOverScreen').style.display='flex';
 }
 
+// ── 선택 버튼 UI 로직 ─────────────────────────────────────────────────────
+const diffColorMap={easy:'active-green',normal:'active-yellow',hard:'active-red'};
+
+document.querySelectorAll('#diffBtns .sel-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    selectedDiff=btn.dataset.diff;
+    document.querySelectorAll('#diffBtns .sel-btn').forEach(b=>{
+      b.className='sel-btn';
+    });
+    btn.className='sel-btn '+diffColorMap[selectedDiff];
+  });
+});
+
+document.querySelectorAll('#musicBtns .sel-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    selectedMusic=btn.dataset.music;
+    document.querySelectorAll('#musicBtns .sel-btn').forEach(b=>{
+      b.className='sel-btn';
+    });
+    btn.className='sel-btn active';
+  });
+});
+
 // ── Input Bindings ────────────────────────────────────────────────────────
 canvas.addEventListener('mousedown',e=>{
   e.preventDefault(); getAC();
@@ -637,36 +747,34 @@ document.addEventListener('keydown',e=>{
   if(c!==undefined) tryPress(c);
 });
 document.getElementById('startBtn').addEventListener('click',()=>{ getAC(); startGame(); });
-document.getElementById('restartBtn').addEventListener('click',()=>{ getAC(); startGame(); });
+document.getElementById('restartBtn').addEventListener('click',()=>{
+  getAC();
+  document.getElementById('gameOverScreen').style.display='none';
+  document.getElementById('startScreen').style.display='flex';
+  st='start';
+});
 document.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
 
-// Responsive scaling — fits any screen size (phone or tablet)
+// ── Responsive Scaling ────────────────────────────────────────────────────
 (function scaleGame(){
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const CANVAS_W = 360, CANVAS_H = 520;
-  const HUD_H = 34 + 4 + 16; // hud + progressBar + gap
-
-  // Max scale that fits both width and height
-  const scaleByW = vw / CANVAS_W;
-  const scaleByH = (vh - HUD_H - 60) / CANVAS_H; // 60px for h1 + gaps
-  const scale = Math.min(scaleByW, scaleByH, 2.5); // cap at 2.5x
-
-  const scaledW = Math.floor(CANVAS_W * scale);
-  const scaledH = Math.floor(CANVAS_H * scale);
-
-  canvas.style.width  = scaledW + 'px';
-  canvas.style.height = scaledH + 'px';
-
-  ['#hud','#progressBar'].forEach(id => {
-    const el = document.querySelector(id);
-    if(el) el.style.width = scaledW + 'px';
+  const vw=window.innerWidth;
+  const vh=window.innerHeight;
+  const CANVAS_W=360, CANVAS_H=520;
+  const HUD_H=34+4+16;
+  const scaleByW=vw/CANVAS_W;
+  const scaleByH=(vh-HUD_H-60)/CANVAS_H;
+  const scale=Math.min(scaleByW,scaleByH,2.5);
+  const scaledW=Math.floor(CANVAS_W*scale);
+  const scaledH=Math.floor(CANVAS_H*scale);
+  canvas.style.width=scaledW+'px';
+  canvas.style.height=scaledH+'px';
+  ['#hud','#progressBar'].forEach(id=>{
+    const el=document.querySelector(id);
+    if(el) el.style.width=scaledW+'px';
   });
-
-  // Also scale quiz overlay font for larger screens
-  if(scale > 1.2){
-    document.getElementById('quizQ').style.fontSize = (1.5 * scale * 0.8) + 'rem';
-    document.querySelectorAll('.quiz-opt').forEach(b => b.style.fontSize = (1 * scale * 0.8) + 'rem');
+  if(scale>1.2){
+    document.getElementById('quizQ').style.fontSize=(1.5*scale*0.8)+'rem';
+    document.querySelectorAll('.quiz-opt').forEach(b=>b.style.fontSize=(1*scale*0.8)+'rem');
   }
 })();
 
