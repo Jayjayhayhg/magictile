@@ -3,6 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="매직타일">
+<meta name="theme-color" content="#1a1a2e">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon192.png">
 <title>Magic Tiles</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -30,9 +36,13 @@ canvas{display:block}
 .sel-btn.active{border-color:#c084fc;color:#c084fc;background:rgba(192,132,252,0.15)}
 .label{color:#aaa;font-size:13px;text-align:center}
 .best-score{color:#fbbf24;font-size:15px}
-#quizOverlay{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(10,10,25,0.97);flex-direction:column;align-items:center;justify-content:center;gap:12px;display:none}
-#quizOverlay .quiz-q{color:#fff;font-size:18px;text-align:center;line-height:1.5;padding:0 20px}
-#quizAnswer{padding:10px;border-radius:8px;border:2px solid #c084fc;background:rgba(255,255,255,0.1);color:#fff;font-size:16px;text-align:center;width:200px;outline:none}
+#quizOverlay{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(10,10,25,0.97);flex-direction:column;align-items:center;justify-content:center;gap:12px;display:none;padding:20px}
+#quizOverlay .quiz-q{color:#fff;font-size:18px;text-align:center;line-height:1.5;padding:0 10px}
+#quizOpts{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}
+.quiz-opt{padding:12px 8px;border:2px solid rgba(255,255,255,0.18);border-radius:10px;background:rgba(255,255,255,0.07);color:#fff;font-size:15px;font-weight:bold;cursor:pointer;text-align:center;transition:all .12s}
+.quiz-opt:active{transform:scale(0.97)}
+.quiz-opt.correct{background:rgba(52,211,153,0.3);border-color:#34d399}
+.quiz-opt.wrong{background:rgba(248,113,113,0.3);border-color:#f87171}
 #quizTimer{color:#fbbf24;font-size:14px}
 #quizFeedback{font-size:16px;font-weight:bold;min-height:22px;text-align:center;padding:0 16px}
 </style>
@@ -87,9 +97,8 @@ canvas{display:block}
     <div id="quizOverlay">
       <div style="color:#c084fc;font-size:20px;font-weight:bold">🧠 퀴즈 타임!</div>
       <div class="quiz-q" id="quizQuestion"></div>
-      <input id="quizAnswer" type="text" placeholder="정답 입력...">
-      <button class="btn btn-primary" id="quizSubmit">확인</button>
       <div id="quizTimer">⏱ 15초</div>
+      <div id="quizOpts"></div>
       <div id="quizFeedback"></div>
     </div>
   </div>
@@ -150,8 +159,51 @@ const DP={
   hard:{baseSpeed:3.2,speedInc:0.35,spawnBase:72,spawnDec:6,spawnMin:38,tempoScale:1.0}
 };
 
-const QVOCAB=[['apple','사과'],['banana','바나나'],['cat','고양이'],['dog','개'],['elephant','코끼리'],['fish','물고기'],['grape','포도'],['hat','모자'],['ice','얼음'],['juice','주스'],['king','왕'],['lion','사자'],['moon','달'],['night','밤'],['orange','오렌지'],['pear','배'],['queen','여왕'],['rain','비'],['sun','태양'],['tree','나무'],['umbrella','우산'],['violet','보라색'],['water','물'],['box','상자'],['yellow','노란색'],['zebra','얼룩말'],['bird','새'],['cloud','구름'],['door','문'],['egg','달걀'],['flower','꽃'],['gift','선물'],['house','집'],['island','섬'],['jam','잼']];
-const QFACTS=[['1×1의 답은?','1'],['하루는 몇 시간?','24'],['일주일은 며칠?','7'],['무지개 색은 몇 가지?','7'],['사계절 중 여름 다음은?','가을'],['대한민국의 수도는?','서울'],['지구에서 가장 큰 바다는?','태평양'],['태양계에서 가장 큰 행성은?','목성'],['사람의 손가락은 모두 몇 개?','10'],['1년은 몇 개월?','12'],['삼각형의 각도 합은?','180'],['물의 화학식은?','H2O'],['빛의 속도는 약 몇 만 km/s?','30'],['한글을 만든 왕은?','세종대왕'],['월드컵은 몇 년마다?','4'],['올림픽은 몇 년마다?','4'],['지구의 위성 이름은?','달'],['가장 작은 행성은?','수성'],['사과가 떨어지는 것은 어떤 힘?','중력'],['식물이 빛으로 양분 만드는 과정은?','광합성']];
+const QPOOL=(()=>{
+  const pool=[];
+  // 구구단
+  for(let a=2;a<=9;a++) for(let b=2;b<=9;b++){
+    const ans=a*b;
+    const ws=new Set();
+    while(ws.size<3){const w=ans+Math.floor(Math.random()*12)-6;if(w!==ans&&w>0)ws.add(w);}
+    pool.push({q:`${a} × ${b} = ?`,a:String(ans),opts:shuf([String(ans),...[...ws].map(String)])});
+  }
+  // 영어단어
+  const voc=[['apple','사과'],['banana','바나나'],['cat','고양이'],['dog','개'],['elephant','코끼리'],['fish','물고기'],['grape','포도'],['hat','모자'],['ice','얼음'],['juice','주스'],['king','왕'],['lion','사자'],['moon','달'],['night','밤'],['orange','오렌지'],['pear','배'],['queen','여왕'],['rain','비'],['sun','태양'],['tree','나무'],['umbrella','우산'],['water','물'],['box','상자'],['yellow','노란색'],['zebra','얼룩말'],['bird','새'],['cloud','구름'],['door','문'],['egg','달걀'],['flower','꽃'],['gift','선물'],['house','집'],['island','섬'],['jam','잼'],['key','열쇠']];
+  voc.forEach(([en,ko])=>{
+    const okos=shuf(voc.filter(v=>v[0]!==en).map(v=>v[1])).slice(0,3);
+    pool.push({q:`"${en}" 의 뜻은?`,a:ko,opts:shuf([ko,...okos])});
+    const oens=shuf(voc.filter(v=>v[1]!==ko).map(v=>v[0])).slice(0,3);
+    pool.push({q:`"${ko}" 를 영어로?`,a:en,opts:shuf([en,...oens])});
+  });
+  // 상식
+  const facts=[
+    {q:'대한민국의 수도는?',a:'서울',opts:['서울','부산','인천','대구']},
+    {q:'태양계에서 가장 큰 행성은?',a:'목성',opts:['목성','토성','천왕성','화성']},
+    {q:'1년은 몇 개월?',a:'12개월',opts:['12개월','10개월','11개월','13개월']},
+    {q:'물의 화학식은?',a:'H₂O',opts:['H₂O','CO₂','NaCl','O₂']},
+    {q:'사람의 손가락은 모두?',a:'10개',opts:['10개','8개','12개','6개']},
+    {q:'지구에서 가장 큰 바다는?',a:'태평양',opts:['태평양','대서양','인도양','북극해']},
+    {q:'삼각형 내각의 합은?',a:'180°',opts:['180°','360°','90°','270°']},
+    {q:'한글을 만든 왕은?',a:'세종대왕',opts:['세종대왕','태조','광해군','정조']},
+    {q:'무지개 색은 몇 가지?',a:'7가지',opts:['7가지','5가지','6가지','8가지']},
+    {q:'사과가 떨어지는 것은 어떤 힘?',a:'중력',opts:['중력','마찰력','탄성력','자기력']},
+    {q:'세계에서 가장 높은 산은?',a:'에베레스트',opts:['에베레스트','K2','한라산','백두산']},
+    {q:'올림픽은 몇 년마다 열리나?',a:'4년',opts:['4년','2년','3년','5년']},
+    {q:'하루는 몇 시간?',a:'24시간',opts:['24시간','12시간','48시간','36시간']},
+    {q:'1+1=?',a:'2',opts:['2','3','1','4']},
+    {q:'100 ÷ 4 = ?',a:'25',opts:['25','20','30','15']},
+  ];
+  facts.forEach(f=>pool.push(f));
+  return pool;
+})();
+let usedQ=new Set();
+function getQuiz(){
+  if(usedQ.size>=QPOOL.length)usedQ.clear();
+  let i;do{i=Math.floor(Math.random()*QPOOL.length);}while(usedQ.has(i));
+  usedQ.add(i);return QPOOL[i];
+}
+function shuf(a){return[...a].sort(()=>Math.random()-.5);}
 
 function noteToCol(f){return f<=310?0:f<=370?1:f<=420?2:3;}
 
@@ -284,7 +336,6 @@ const finalScoreEl=document.getElementById('finalScore');
 const finalBestEl=document.getElementById('finalBest');
 const quizOverlay=document.getElementById('quizOverlay');
 const quizQEl=document.getElementById('quizQuestion');
-const quizAEl=document.getElementById('quizAnswer');
 const quizTEl=document.getElementById('quizTimer');
 const quizFEl=document.getElementById('quizFeedback');
 
@@ -345,8 +396,6 @@ canvas.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
 document.addEventListener('visibilitychange',()=>{if(ac&&ac.state==='suspended')ac.resume();});
 document.addEventListener('touchstart',()=>getAC(),{once:true,passive:true});
 
-document.getElementById('quizSubmit').addEventListener('click',submitQuiz);
-quizAEl.addEventListener('keydown',e=>{if(e.key==='Enter')submitQuiz();});
 
 function initGame(){
   dp=DP[selDiff];song=SONGS[selSong];
@@ -574,41 +623,46 @@ function gameOver(){
 
 function triggerQuiz(){
   quizActive=true;st='paused';
-  quizFEl.textContent='';quizAEl.value='';
-  const type=Math.random()<0.33?'gg':Math.random()<0.5?'v':'f';
-  if(type==='gg'){
-    const a=2+Math.floor(Math.random()*8),b=1+Math.floor(Math.random()*9);
-    quizQEl.textContent=`${a} × ${b} = ?`;quizCorrect=String(a*b);
-  } else if(type==='v'){
-    const p=QVOCAB[Math.floor(Math.random()*QVOCAB.length)];
-    const dir=Math.random()<0.5;
-    quizQEl.textContent=dir?`"${p[0]}"의 뜻은?`:`"${p[1]}"을(를) 영어로?`;
-    quizCorrect=dir?p[1]:p[0];
-  } else {
-    const q=QFACTS[Math.floor(Math.random()*QFACTS.length)];
-    quizQEl.textContent=q[0];quizCorrect=q[1];
-  }
+  quizFEl.textContent='';
+  const q=getQuiz();
+  quizCorrect=q.a;
+  quizQEl.textContent=q.q;
+  const optsEl=document.getElementById('quizOpts');
+  optsEl.innerHTML='';
+  q.opts.forEach(opt=>{
+    const btn=document.createElement('button');
+    btn.className='quiz-opt';btn.textContent=opt;
+    btn.addEventListener('click',()=>answerQuiz(opt,btn,optsEl));
+    btn.addEventListener('touchend',e=>{e.preventDefault();answerQuiz(opt,btn,optsEl);});
+    optsEl.appendChild(btn);
+  });
   quizTv=15;quizTEl.textContent='⏱ 15초';
-  quizOverlay.style.display='flex';quizAEl.focus();
+  quizOverlay.style.display='flex';
   quizTid=setInterval(()=>{
     quizTv--;quizTEl.textContent='⏱ '+quizTv+'초';
     if(quizTv<=0){
       clearInterval(quizTid);
-      quizFEl.textContent='⏰ 시간 초과! -1 생명';quizFEl.style.color='#f87171';
+      optsEl.querySelectorAll('.quiz-opt').forEach(b=>{b.style.pointerEvents='none';if(b.textContent===quizCorrect)b.classList.add('correct');});
+      quizFEl.textContent='⏰ 시간 초과! 정답: '+quizCorrect+' -1 생명';quizFEl.style.color='#f87171';
       lives--;updateHUD();setTimeout(closeQuiz,2000);
     }
   },1000);
 }
 
-function submitQuiz(){
-  if(!quizActive)return;
+function answerQuiz(chosen,btn,optsEl){
+  if(!quizActive||btn.style.pointerEvents==='none')return;
   clearInterval(quizTid);
-  const ans=(quizAEl.value||'').trim();
-  if(ans.toLowerCase()===quizCorrect.toLowerCase()){
-    quizFEl.textContent='✅ 정답! +200점, +5콤보';quizFEl.style.color='#34d399';
+  optsEl.querySelectorAll('.quiz-opt').forEach(b=>{
+    b.style.pointerEvents='none';
+    if(b.textContent===quizCorrect)b.classList.add('correct');
+  });
+  if(chosen===quizCorrect){
+    btn.classList.add('correct');
+    quizFEl.textContent='🎉 정답! +200점 +5콤보';quizFEl.style.color='#34d399';
     score+=200;combo+=5;updateHUD();
   } else {
-    quizFEl.textContent=`❌ 오답! 정답: ${quizCorrect} -1 생명`;quizFEl.style.color='#f87171';
+    btn.classList.add('wrong');
+    quizFEl.textContent='❌ 오답! 정답: '+quizCorrect+'  -1 생명';quizFEl.style.color='#f87171';
     lives--;updateHUD();
   }
   setTimeout(closeQuiz,2000);
@@ -650,7 +704,11 @@ scaleApp();
 lastTime=performance.now();
 animId=requestAnimationFrame(loop);
 
-try{if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});}catch(e){}
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('serviceworker.js').catch(()=>{});
+  });
+}
 </script>
 </body>
 </html>
